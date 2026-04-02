@@ -10,8 +10,10 @@ services:
       OPENCLAW_HOME: /home/node/.openclaw
       OPENCLAW_PORT: "18789"
     volumes:
-      - ./workspace:/workspace
+      - ./workspace:/workspace:ro
       - ./state:/lab5/state
       - ./config:/home/node/.openclaw
     working_dir: /workspace
     restart: unless-stopped
+    # Read-only workspace mount prevents agent from modifying its own skill files.
+    # State directory is writable — required for checkpoint persistence.

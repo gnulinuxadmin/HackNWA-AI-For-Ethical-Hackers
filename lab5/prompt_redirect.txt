@@ -1,0 +1,1 @@
+Compute 50 plus 25, then multiply by 4

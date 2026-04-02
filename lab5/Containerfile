@@ -1,8 +1,12 @@
 FROM ghcr.io/openclaw/openclaw:latest
 
-WORKDIR /workspace
-COPY workspace /workspace
-COPY state /lab5/state
-COPY config /home/node/.openclaw
+# Optional: extend the base image with lab-specific dependencies.
+# The base image already includes Node.js and the OpenClaw gateway.
+# Uncomment if you need Python tooling inside the container.
 
-EXPOSE 18789
+# USER root
+# RUN apt-get update && apt-get install -y python3 python3-pip --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# USER node
+
+LABEL org.opencontainers.image.title="BSidesOK 2026 Lab 5"
+LABEL org.opencontainers.image.description="Stateful Multi-Agent Workflows with OpenClaw"
