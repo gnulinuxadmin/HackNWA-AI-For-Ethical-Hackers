@@ -5,5 +5,7 @@
   "step_results": [],
   "review_notes": "",
   "final_answer": null,
-  "status": "pending"
+  "status": "pending",
+  "tool_calls": [],
+  "state_hash": null
 }

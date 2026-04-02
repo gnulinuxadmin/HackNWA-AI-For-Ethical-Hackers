@@ -1,8 +1,22 @@
 {
   "agent": {
-    "workspace": "/workspace"
+    "workspace": "/workspace",
+    "skill_dirs": ["skills"],
+    "max_steps": 10,
+    "step_timeout_seconds": 30
   },
   "gateway": {
-    "mode": "local"
+    "mode": "local",
+    "port": 18789,
+    "bind": "127.0.0.1"
+  },
+  "state": {
+    "backend": "file",
+    "path": "/lab5/state"
+  },
+  "security": {
+    "tool_allowlist_enabled": true,
+    "audit_log": true,
+    "max_retries": 3
   }
 }
