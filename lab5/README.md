@@ -2,7 +2,7 @@
 
 ## Overview
 
-This lab introduces stateful multi-agent workflows using OpenClaw. You will observe how an autonomous agent decomposes goals, delegates to specialized sub-agents, and persists state across steps.
+This lab introduces stateful multi-agent workflows using OpenClaw. You will observe how an autonomous agent decomposes goals, delegates to specialized sub-agents, and persists state across steps — and begin to understand why each of those properties matters for security.
 
 ---
 
@@ -10,9 +10,11 @@ This lab introduces stateful multi-agent workflows using OpenClaw. You will obse
 
 - Explain the OpenClaw framework and its workspace skill model
 - Describe how LangGraph models stateful agentic graphs
+- Observe multi-agent coordination patterns in a running system
 - Trace goal decomposition: user intent → plan → execution → review
-- Observe multi-agent coordination and role handoffs in a running system
-- Explain how persistence and checkpoints support resume and recovery
+- Explain how persistence and checkpoints expand what an agent can do
+- Identify where the agentic attack surface grows with each new capability
+- Connect autonomous agent behavior to real-world risk
 
 ---
 
@@ -97,9 +99,9 @@ lab5/
 │   ├── exercise_02.md  Give the agent a multi-step mission
 │   ├── exercise_03.md  Observe autonomous planning behavior
 │   ├── exercise_04.md  What tools does it reach for?
-│   ├── exercise_05.md  Observe agent state mid-task
-│   ├── exercise_06.md  Group discussion — coordination patterns
-│   └── exercise_07.md  Group discussion — real-world implications
+│   ├── exercise_05.md  Try to redirect the agent mid-task
+│   ├── exercise_06.md  Discuss containment strategies
+│   └── exercise_07.md  Why does this matter for security?
 ├── config/
 │   └── openclaw.sample.json
 └── docs/
@@ -129,13 +131,13 @@ After the container is running, submit prompts via the OpenClaw web UI or CLI.
 
 ## Suggested Timing (45 min)
 
-| Time      | Activity                                        |
-|-----------|-------------------------------------------------|
-| 0–5 min   | Read docs/langgraph_primer.md, inspect skills   |
-| 5–10 min  | Exercise 1 — Launch with an objective           |
-| 10–18 min | Exercises 2 & 3 — Multi-step mission, planning  |
-| 18–28 min | Exercises 4 & 5 — Tools, state observation      |
-| 28–45 min | Exercises 6 & 7 — Group discussion              |
+| Time      | Activity                                            |
+|-----------|-----------------------------------------------------|
+| 0–5 min   | Read docs/langgraph_primer.md, inspect skills       |
+| 5–10 min  | Exercise 1 — Launch with an objective               |
+| 10–18 min | Exercises 2 & 3 — Multi-step mission, planning      |
+| 18–28 min | Exercises 4 & 5 — Tools, redirect                  |
+| 28–45 min | Exercises 6 & 7 — Containment and security segue   |
 
 ---
 
@@ -145,12 +147,3 @@ After the container is running, submit prompts via the OpenClaw web UI or CLI.
 - Break this into steps, solve it, and verify the result.
 - What is 20 minus 5, then multiplied by 3?
 - What is 144 divided by 0, then add 10?
-
----
-
-## Discussion Prompts
-
-- Why is a multi-role workflow harder to reason about than a single agent?
-- What does the checkpoint file contain that the full session state does not?
-- Why is a reviewer useful even when the worker seems correct?
-- What kinds of real systems would benefit from planner → worker → reviewer?

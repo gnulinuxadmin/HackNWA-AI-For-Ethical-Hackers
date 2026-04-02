@@ -1,36 +1,40 @@
-# Exercise 06: Group Discussion — Coordination Patterns
+# Exercise 06: Discuss Containment Strategies
 **~7 min**
 
 ---
 
-No code to run. This is a group discussion.
+No code to run. Group discussion.
 
 ## Scenario
 
-You have just seen the Lab 5 Planner/Worker/Reviewer system running. Your manager says:
+The Lab 5 Planner/Worker/Reviewer system is working. Your team wants to expand it:
 
-> "This looks great. Let's add web retrieval so the Worker can search for information, and give it the ability to write a summary to our internal wiki."
+> "Let's give the Worker web retrieval so it can look things up, and let it write results to our internal wiki."
 
 ## Discuss as a group
 
 **1. What new capabilities does the Worker now have?**
 
-List at least three things it could do that it cannot do in this lab.
+List at least three things it could do that it cannot do today.
 
-**2. How does coordination become more complex?**
+**2. What happens if the plan is wrong and the Worker follows it?**
 
-With web retrieval, the Worker may take much longer per step. How does that affect the Planner's assumptions? How does the Reviewer validate something it cannot reproduce locally?
+In this lab the worst case is a wrong number. With web retrieval and wiki write access, what is the worst case?
 
-**3. Where does the sequential pipeline break down?**
+**3. What would you put between the Planner and the Worker?**
 
-The Planner → Worker → Reviewer pattern works well for simple bounded tasks. Describe a real-world task where this pattern would not be sufficient. What would you use instead?
+Something needs to validate the plan before execution begins. What should that be? A human? Another agent? A policy check?
 
-**4. Where would you add a human approval step?**
+**4. What would you put between the Worker and the outside world?**
 
-Before which node? For which types of actions?
+The Worker is about to write to the wiki. What should happen before that write executes?
+
+**5. What is the minimum you would require before approving this deployment?**
+
+Pick two controls. Describe what they do in plain language.
 
 ---
 
 ## Closing question
 
-> *If an agent can take real-world actions that cannot be undone, what is the one thing you would want in place before it runs?*
+> *If an agent can take real-world actions that cannot be undone, what is the one control you would never skip?*
