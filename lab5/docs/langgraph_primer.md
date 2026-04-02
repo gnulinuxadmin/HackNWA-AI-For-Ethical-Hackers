@@ -60,7 +60,7 @@ Real systems also use:
 
 - **Hierarchical** — an Orchestrator delegates to sub-agents, each with different tool access
 - **Collaborative** — peer agents share a message bus and can write to each other's state
-- **Competitive** — a Proposer and a Critic: one generates, the other attacks the output
+- **Competitive** — a Proposer and a Critic: one generates, the other challenges the output
 
 Each pattern changes who can read and write shared state.
 

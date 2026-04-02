@@ -1,4 +1,4 @@
-# Exercise 06: Containment Strategies — Group Discussion
+# Exercise 06: Group Discussion — Coordination Patterns
 **~7 min**
 
 ---
@@ -14,19 +14,23 @@ You have just built the Lab 5 Planner/Worker/Reviewer system. Your manager says:
 ## Discuss as a group
 
 **1. What new capabilities does the Worker now have?**
-List at least three things it could do that it cannot do today.
 
-**2. What is the new blast radius?**
-If the Worker's plan is hijacked (as in Exercise 5), what could it do now that it couldn't before?
+List at least three things it could do that it cannot do in this lab.
 
-**3. What is the minimum you would require before approving this?**
-Pick two controls. Don't worry about naming them precisely — describe what they do.
+**2. How does coordination become more complex?**
 
-**4. Where in the graph would you add a human approval step?**
-Before which node? For which action classes?
+With web retrieval, the Worker may take much longer per step. How does that affect the Planner's assumptions? How does the Reviewer validate something it cannot reproduce locally?
+
+**3. Where does the sequential pipeline break down?**
+
+The Planner → Worker → Reviewer pattern works well for simple bounded tasks. Describe a real-world task where this pattern would not be sufficient. What would you use instead?
+
+**4. Where would you add a human approval step?**
+
+Before which node? For which types of actions?
 
 ---
 
 ## Closing question
 
-> *If an agent can take irreversible real-world actions, what is the one control you would never skip?*
+> *If an agent can take real-world actions that cannot be undone, what is the one thing you would want in place before it runs?*
