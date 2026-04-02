@@ -1,0 +1,8 @@
+FROM ghcr.io/openclaw/openclaw:latest
+
+WORKDIR /workspace
+COPY workspace /workspace
+COPY state /lab5/state
+COPY config /home/node/.openclaw
+
+EXPOSE 18789
