@@ -1,8 +1,5 @@
 # Lab 5: Stateful Multi-Agent Workflows with OpenClaw
 
-**BSidesOK 2026 — Securing Agentic AI Systems**
-**Duration: 45 minutes**
-
 ---
 
 ## Overview
