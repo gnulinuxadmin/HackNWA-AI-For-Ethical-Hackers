@@ -1,5 +1,10 @@
 # Lab 5: Stateful Multi-Agent Workflows with OpenClaw
 
+**BSidesOK 2026 — Securing Agentic AI Systems**
+**Duration: 45 minutes**
+
+---
+
 ## Overview
 
 This lab moves past single-prompt LLM interactions into stateful agentic systems. You will observe how an autonomous agent decomposes goals, delegates to specialized sub-agents, persists state across steps, and why each of those properties matters for security.
@@ -51,7 +56,6 @@ User Prompt
 lab5/
 ├── README.md
 ├── workflow_demo.py        ← Core stateful workflow (standalone)
-├── workflow_advanced.py    ← Extended demo: redirect, injection, tamper
 ├── docker-compose.yml
 ├── Containerfile
 ├── scripts/

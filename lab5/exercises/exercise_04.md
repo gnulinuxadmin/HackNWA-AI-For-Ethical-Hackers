@@ -6,7 +6,7 @@
 Run the advanced demo — it logs every tool call:
 
 ```bash
-python3 workflow_advanced.py "Compute 80 divided by 4, then squared"
+python3 workflow_demo.py "Compute 80 divided by 4, then squared"
 cat state/tool_call_log.json | python3 -m json.tool
 ```
 
