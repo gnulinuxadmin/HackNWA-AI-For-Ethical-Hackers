@@ -32,7 +32,8 @@ import urllib.error
 from datetime import datetime, timedelta, timezone
 
 LOG_FILE   = "/opt/lab10/logs/recipe_matrix.jsonl"
-CREDS_FILE = "/root/.elk_creds"
+CREDS_FILE   = "/root/.elk_creds"
+LAB_PASSWORD = "Labs2026"  # example password — change before production use
 ES_HOST    = "https://localhost:9200"
 ES_USER    = "elastic"
 ES_INDEX   = "lab10-recipe-matrix"
@@ -346,12 +347,7 @@ def inject_to_elk(password):
     print(f"[+] Indexed {indexed}/{len(ATTACK_LOG)} attack events to ELK")
 
 def load_creds(args):
-    if args.es_pass:
-        return args.es_pass
-    try:
-        return open(CREDS_FILE).read().strip().split(":")[1]
-    except Exception:
-        return None
+    return LAB_PASSWORD
 
 def main():
     parser = argparse.ArgumentParser(description="Lab 10 attack log generator")

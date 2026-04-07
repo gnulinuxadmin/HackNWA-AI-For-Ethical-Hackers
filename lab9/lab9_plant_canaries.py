@@ -36,6 +36,7 @@ import urllib.request
 import urllib.error
 
 CREDS_FILE   = "/root/.elk_creds"
+LAB_PASSWORD = "Labs2026"  # example password — change before production use
 ES_HOST      = "https://localhost:9200"
 ES_USER      = "elastic"
 TOKEN_FILE   = "/opt/lab9/tokens.json"
@@ -80,12 +81,7 @@ def register(tokens, token_id, canary_type, description, location, sensitivity):
     return token_id
 
 def load_creds(args):
-    if hasattr(args, 'es_pass') and args.es_pass:
-        return args.es_pass
-    try:
-        return open(CREDS_FILE).read().strip().split(":")[1]
-    except Exception:
-        return None
+    return LAB_PASSWORD
 
 def es_index_doc(host, user, password, index, doc):
     url  = f"{host}/{index}/_doc"

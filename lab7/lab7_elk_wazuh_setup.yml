@@ -46,7 +46,7 @@
     wazuh_manager_port: 1514
     lab_data_dir: "/opt/lab7"
     student_user: "student"
-    lab_student_password: "BSidesOK2026"    # swap to ansible-vault in prod
+    lab_student_password: "Labs2026"    # example password — change before production use
     elk_creds_file: "/root/.elk_creds"
 
   pre_tasks:
@@ -380,7 +380,7 @@
       ansible.builtin.copy:
         dest: /etc/logstash/logstash.env
         content: |
-          ELASTIC_PASSWORD={{ elastic_password | default('CHANGEME') }}
+          ELASTIC_PASSWORD={{ elastic_password | default('Labs2026') }}
         owner: root
         group: logstash
         mode: '0640'
@@ -441,7 +441,7 @@
         disable: 'yes'
     wazuh_api_users:
       - username: wazuh-wui
-        password: "BSidesWUI2026!"
+        password: "Labs2026"    # example password — change before production use
     wazuh_manager_localfiles:
       - format: syslog
         location: /var/log/messages
