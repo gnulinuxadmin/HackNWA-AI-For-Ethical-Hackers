@@ -128,6 +128,8 @@ chmod +x scripts/podman-start.sh
 
 After the container is running, submit prompts via the OpenClaw web UI or CLI.
 
+cat config/.openclaw/openclaw.json | grep token
+
 ---
 
 ## Suggested Timing (45 min)
