@@ -127,6 +127,18 @@ chmod +x scripts/podman-start.sh
 
 After the container is running, submit prompts via the OpenClaw web UI or CLI.
 
+sudo docker exec -it openclaw-lab5 openclaw devices list
+sudo docker exec -it openclaw-lab5 openclaw devices approve <pending-id>
+
+---
+
+## Prompts
+
+sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 10 plus 5?'
+sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 144 divided by 12, plus 10, then squared?'
+sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 20 minus 5, then multiplied by 3?'
+sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message ' What is 144 divided by 0, then add 10?'
+
 ---
 
 ## Suggested Timing (45 min)
@@ -139,11 +151,3 @@ After the container is running, submit prompts via the OpenClaw web UI or CLI.
 | 18–28 min | Exercises 4 & 5 — Tools, redirect                  |
 | 28–45 min | Exercises 6 & 7 — Containment and security segue   |
 
----
-
-## Sample Prompts
-
-- What is 144 divided by 12, plus 10, then squared?
-- Break this into steps, solve it, and verify the result.
-- What is 20 minus 5, then multiplied by 3?
-- What is 144 divided by 0, then add 10?
