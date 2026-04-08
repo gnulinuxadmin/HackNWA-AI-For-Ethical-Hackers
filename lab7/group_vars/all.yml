@@ -1,6 +1,6 @@
 elk_version: "9.3.2"
 wazuh_version: "4.14.4"
-es_heap_size: "2g"
+es_heap_size: "512m"
 kibana_port: 5601
 elastic_port: 9200
 wazuh_api_port: 55000
