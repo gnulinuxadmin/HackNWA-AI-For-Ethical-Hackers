@@ -5,15 +5,21 @@
       "skills"
     ],
     "max_steps": 10,
-    "step_timeout_seconds": 30
+    "step_timeout_seconds": 30,
+    "model": "ollama/llama3.2:3b"
   },
   "gateway": {
     "mode": "local",
     "port": 18789,
-    "bind": "127.0.0.1"
+    "bind": "0.0.0.0"
   },
   "state": {
     "backend": "file",
     "path": "/lab5/state"
+  },
+  "providers": {
+    "ollama": {
+      "baseUrl": "http://host.docker.internal:11434"
+    }
   }
 }
