@@ -155,6 +155,7 @@
           http.port: 9200
           discovery.type: single-node
           xpack.security.enabled: true
+          xpack.security.enrollment.enabled: true
           xpack.security.http.ssl.enabled: true
           xpack.security.http.ssl.keystore.path: /etc/elasticsearch/certs/http.p12
           xpack.security.transport.ssl.enabled: true
@@ -242,19 +243,19 @@
       no_log: true
 
     - name: Generate Kibana enrollment token
-      ansible.builtin.command:
-        cmd: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+      ansible.builtin.shell: |
+        /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana 2>/dev/null
       register: kibana_enrollment_token
       changed_when: true
-      no_log: true
+      no_log: false
 
     - name: Enroll Kibana with Elasticsearch
       ansible.builtin.command:
-        cmd: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token.stdout }}"
+        cmd: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrollment_token.stdout | trim }}"
       register: kibana_enroll
       changed_when: kibana_enroll.rc == 0
       failed_when: kibana_enroll.rc != 0
-      no_log: true
+      no_log: false
 
     - name: Configure Kibana network binding
       ansible.builtin.lineinfile:
