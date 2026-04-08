@@ -431,18 +431,20 @@
   tags: wazuh
 
   vars:
-    wazuh_manager_config:
-      json_output: 'yes'
-      alerts_log: 'yes'
-      logall: 'no'
-      logall_json: 'no'
-      log_level: 1
-      email_notification: 'no'
-      cluster:
-        disable: 'yes'
+    # Flat vars matching ansible-wazuh-manager defaults/main.yml structure
+    wazuh_manager_json_output: 'yes'
+    wazuh_manager_alerts_log: 'yes'
+    wazuh_manager_logall: 'no'
+    wazuh_manager_logall_json: 'no'
+    wazuh_manager_log_level: 1
+    wazuh_manager_email_notification: 'no'
+    wazuh_manager_cluster_disabled: 'yes'
+    wazuh_manager_cluster_name: 'lab7'
+    wazuh_manager_cluster_node_name: 'lab7-manager'
+    wazuh_manager_cluster_node_type: 'master'
     wazuh_api_users:
       - username: wazuh-wui
-        password: "Labs2026"    # example password — change before production use
+        password: "Labs2026"    # example password - change before production use
     wazuh_manager_localfiles:
       - format: syslog
         location: /var/log/messages
