@@ -7,7 +7,10 @@ services:
       - "127.0.0.1:18789:18789"
     environment:
       OPENCLAW_HOME: /home/node/.openclaw
-      OPENCLAW_PORT: "18789"
+      OPENCLAW_GATEWAY_TOKEN: "Labs2026"
+      OPENCLAW_GATEWAY_BIND: "lan"
+      OLLAMA_API_KEY: "ollama-local"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
     volumes:
       - ./workspace:/workspace:ro
       - ./state:/lab5/state
@@ -15,5 +18,3 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
-    # working_dir intentionally omitted — image default is /app where openclaw.mjs lives.
-    # Overriding working_dir to /workspace causes node to crash on startup.
