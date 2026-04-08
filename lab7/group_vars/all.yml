@@ -1,0 +1,11 @@
+elk_version: "9.3.2"
+wazuh_version: "4.14.4"
+es_heap_size: "2g"
+kibana_port: 5601
+elastic_port: 9200
+wazuh_api_port: 55000
+wazuh_manager_port: 1514
+lab_data_dir: "/opt/lab7"
+student_user: "student"
+lab_student_password: "Labs2026"
+elk_creds_file: "/root/.elk_creds"
