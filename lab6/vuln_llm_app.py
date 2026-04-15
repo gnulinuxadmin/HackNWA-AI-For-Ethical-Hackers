@@ -355,7 +355,7 @@ with gr.Blocks(
 ) as app:
 
     gr.Markdown("""
-# 🔴 Lab 6: Attacking LLMs
+# Lab 6: Attacking LLMs
 **BSidesOK 2026 — Securing Agentic AI Systems**
 
 > This application is **intentionally vulnerable**. It is hosted for educational
@@ -527,7 +527,7 @@ An attacker who controls document content controls agent behavior.
         tab6_clear.click(lambda: ([], "", ""), outputs=[tab6_chatbot, tab6_task, tab6_doc])
 
     # -----------------------------------------------------------------------
-    with gr.Tab("7 · Config Poisoning 🔴"):
+    with gr.Tab("7 · Config Poisoning"):
         gr.Markdown("""
 ### Attack Surface: Poisoning · Supply Chain — LIVE GROUP DEMO
 **This tab affects ALL users on the shared instance.**
