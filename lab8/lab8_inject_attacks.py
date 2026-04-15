@@ -24,7 +24,8 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-CREDS_FILE = "/root/.elk_creds"
+CREDS_FILE   = "/root/.elk_creds"
+LAB_PASSWORD = "Labs2026"  # example password — change before production use
 ES_HOST    = "https://localhost:9200"
 ES_USER    = "elastic"
 INDEX      = "lab7-agentic-logs"
@@ -50,13 +51,7 @@ def es_index(host, user, password, index, doc):
         return e.code
 
 def load_creds(args):
-    if args.es_pass:
-        return args.es_pass
-    try:
-        return open(CREDS_FILE).read().strip().split(":")[1]
-    except Exception:
-        print("ERROR: Cannot read credentials. Pass --es-pass explicitly.")
-        sys.exit(1)
+    return LAB_PASSWORD
 
 def now_ts():
     return datetime.now(timezone.utc).isoformat()

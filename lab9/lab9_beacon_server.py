@@ -37,7 +37,8 @@ import threading
 import urllib.parse
 import urllib.request
 
-CREDS_FILE  = "/root/.elk_creds"
+CREDS_FILE   = "/root/.elk_creds"
+LAB_PASSWORD = "Labs2026"  # example password — change before production use
 ES_HOST     = "https://localhost:9200"
 ES_USER     = "elastic"
 ES_INDEX    = "lab9-canary-hits"
@@ -95,10 +96,7 @@ def ensure_cert(host):
 
 # ── ELK helper ────────────────────────────────────────────
 def load_es_password():
-    try:
-        return open(CREDS_FILE).read().strip().split(":")[1]
-    except Exception:
-        return None
+    return LAB_PASSWORD
 
 def send_to_elk(event, es_password):
     if not es_password:

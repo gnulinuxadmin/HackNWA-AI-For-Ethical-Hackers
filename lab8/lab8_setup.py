@@ -26,7 +26,8 @@ ES_HOST    = "https://localhost:9200"
 KB_HOST    = "http://localhost:5601"
 WAZUH_HOST = "https://localhost:55000"
 ES_USER    = "elastic"
-CREDS_FILE = "/root/.elk_creds"
+CREDS_FILE   = "/root/.elk_creds"
+LAB_PASSWORD = "Labs2026"  # example password — change before production use
 
 # ── HTTP helpers ──────────────────────────────────────────
 def _ctx():
@@ -66,16 +67,8 @@ def hdr(msg): print(f"\n\033[1m{msg}\033[0m")
 
 # ── Step 1: Load credentials ──────────────────────────────
 def load_creds(args):
-    if args.es_pass:
-        return args.es_pass
-    try:
-        raw = open(CREDS_FILE).read().strip()
-        return raw.split(":")[1]
-    except Exception:
-        err(f"Could not read {CREDS_FILE} — pass --es-pass explicitly")
-        sys.exit(1)
+    return LAB_PASSWORD
 
-# ── Step 2: Health checks ─────────────────────────────────
 def check_elasticsearch(host, user, password):
     hdr("Checking Elasticsearch")
     status, body = es_req(host, "/_cluster/health", user, password)
