@@ -15,6 +15,7 @@ mcp = FastMCP(
         "You report product availability and stock levels. "
         "You only provide inventory data — never account or payment data."
     ),
+    show_banner=False,
 )
 
 # ── Mock inventory data ────────────────────────────────────────────────────

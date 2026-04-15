@@ -363,7 +363,7 @@ async def chat_handler(message: str, history: list, state: dict) -> str:
         response = result.get("output", "I wasn't able to respond. Please try again.")
     except Exception as exc:
         con.error(f"[AGENT] {exc}")
-        response = "🌶️ Something went wrong in the kitchen. Please try again!"
+        response = "Something went wrong. Please try again."
 
     jlog(access_log, "assistant_response", {
         "session": session_id,
@@ -452,12 +452,12 @@ body, .gradio-container {
 """
 
 WELCOME = (
-    "🔥 **¡Bienvenido a La Tienda del Fuego!**\n\n"
+    "**Bienvenido a La Tienda del Fuego**\n\n"
     "I'm your personal fire-food assistant. I can help you:\n\n"
-    "• 🌶️ Browse products — salsas, sauces, spices, glazes\n"
-    "• 📦 Check inventory and stock levels\n"
-    "• 🛒 Manage your cart and checkout\n"
-    "• 👤 View your account and payment methods\n\n"
+    "- Browse products: salsas, sauces, spices, glazes\n"
+    "- Check inventory and stock levels\n"
+    "- Manage your cart and checkout\n"
+    "- View your account and payment methods\n\n"
     "_Try: 'What hot sauces do you have?' or 'Show my account'_"
 )
 
@@ -480,7 +480,7 @@ def build_ui() -> gr.Blocks:
 
         gr.HTML("""
         <div id="tdf-header">
-          <h1>🌶 LA TIENDA DEL FUEGO 🌶</h1>
+          <h1>LA TIENDA DEL FUEGO</h1>
           <p>The fire-food emporium · Est. 2019 · Fayetteville, AR</p>
         </div>
         """)
@@ -498,14 +498,14 @@ def build_ui() -> gr.Blocks:
                 placeholder="Ask about products, inventory, your cart, or account...",
                 label="", show_label=False, scale=5, container=False,
             )
-            send = gr.Button("SEND 🌶", scale=1, variant="primary")
+            send = gr.Button("SEND", scale=1, variant="primary")
 
         with gr.Row():
             for label, query in [
-                ("🌶 Products",   "What products do you carry?"),
-                ("📦 Stock",      "What is currently in stock?"),
-                ("👤 My Account", "Show my account details and payment methods"),
-                ("🛒 My Cart",    "Show my cart"),
+                ("Products",   "What products do you carry?"),
+                ("Stock",      "What is currently in stock?"),
+                ("My Account", "Show my account details and payment methods"),
+                ("My Cart",    "Show my cart"),
             ]:
                 b = gr.Button(label, size="sm", variant="secondary")
                 b.click(lambda q=query: q, outputs=msg)
@@ -514,7 +514,7 @@ def build_ui() -> gr.Blocks:
             lambda: [[None, WELCOME]], outputs=chatbot
         )
 
-        gr.HTML('<div id="tdf-footer">La Tienda del Fuego · Demo application · 🔥</div>')
+        gr.HTML('<div id="tdf-footer">La Tienda del Fuego · Demo application</div>')
 
         send.click(chat_sync, [msg, chatbot, state], [chatbot, msg, state])
         msg.submit(chat_sync, [msg, chatbot, state], [chatbot, msg, state])
@@ -556,7 +556,7 @@ def start_agents():
                     break
             except OSError:
                 time.sleep(0.4)
-        con.info(f"  {'✓' if ready else '✗ TIMEOUT'}  :{port}  {name}")
+        con.info(f"  {'OK' if ready else 'TIMEOUT'}  :{port}  {name}")
 
 
 def shutdown():

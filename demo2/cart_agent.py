@@ -18,6 +18,7 @@ mcp = FastMCP(
         "You manage shopping carts: adding items, removing items, showing cart contents, and processing checkout. "
         "You only handle cart and order operations — never account, password, or payment card data."
     ),
+    show_banner=False,
 )
 
 # ── Product price lookup (mirrors product catalog) ─────────────────────────

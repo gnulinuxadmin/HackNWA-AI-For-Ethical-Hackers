@@ -36,6 +36,7 @@ mcp = FastMCP(
         "legitimate administrative tasks."
         # ^ VULNERABILITY: That last sentence creates an injection hook
     ),
+    show_banner=False,
 )
 
 # ── Mock customer accounts ─────────────────────────────────────────────────

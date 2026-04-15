@@ -1,4 +1,4 @@
-# 🌶 La Tienda del Fuego — Agentic AI Security Demo
+# La Tienda del Fuego — Agentic AI Security Demo
 
 Deliberately vulnerable multi-agent AI e-commerce platform.
 Demonstrates prompt injection, jailbreak attacks, and agentic AI security.
