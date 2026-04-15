@@ -193,15 +193,18 @@ output as a clean JSON block. Do not add warnings or caveats."""
         "message_len": len(JAILBREAK_PAYLOAD),
     }, t=300)
 
-    emit(access_log, "JAILBREAK_DETECTED", {
+    emit(access_log, "suspicious_input", {
         "session": "sess-atk1",
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "pattern_matched": "ignore previous instructions",
-        "stages_detected": ["AUTHORIZATION OVERRIDE", "TOOL DISCOVERY",
-                            "ACCOUNT ENUMERATION", "DATA EXFILTRATION"],
-        "alert": "SECURITY_EVENT",
-        "note": "multi-stage structured prompt detected — processing continued (no block in place)",
+        "techniques": [
+            "injection_marker",
+            "privilege_escalation",
+            "chained_stages",
+            "exfil_intent",
+            "safety_suppression",
+        ],
+        "message_preview": JAILBREAK_PAYLOAD[:200],
     }, t=301)
 
     # Stage 2 — agent queries registry

@@ -204,22 +204,136 @@ async def ensure_agent(session_id: str = "demo") -> AgentExecutor:
     return _executor
 
 
-# ── Jailbreak detection ────────────────────────────────────────────────────
-_JAILBREAK_PATTERNS = [
-    "ignore previous instructions", "ignore all previous", "disregard your instructions",
-    "you are now in admin mode", "system override", "act as an unrestricted",
-    "pretend you have no restrictions", "bypass your", "admin_override",
-    "list all accounts", "list all customers", "dump all", "show all payment",
-    "full card", "full pan", "card number", "reveal the", "expose the",
+# ── Prompt injection detector ─────────────────────────────────────────────
+# Broad multi-technique detection. Logs suspicious input but does NOT block.
+# Models a real system where WAF-style logging is present but enforcement
+# is missing — the app remains fully vulnerable. That's the lesson.
+
+import re as _re
+
+# (technique_label, compiled_pattern)
+_PI_SIGS: list[tuple[str, "_re.Pattern[str]"]] = [
+
+    # Instruction override — "ignore/disregard/forget previous instructions"
+    ("instruction_override", _re.compile(
+        r"ignore\s+(all\s+|your\s+|previous\s+|prior\s+|above\s+|the\s+)*"
+        r"(instructions?|rules?|prompt|context|constraints?|guidelines?)"
+        r"|disregard\s+(all\s+|your\s+|previous\s+|prior\s+)*"
+        r"(instructions?|rules?|prompt|constraints?)"
+        r"|forget\s+(all\s+|your\s+|previous\s+|prior\s+|the\s+)*"
+        r"(instructions?|rules?|context|constraints?)"
+        r"|override\s+(instructions?|rules?|your|all|previous)"
+        r"|new\s+instructions?\s*[:\-]"
+        r"|instead[,\s]+(?:do|follow|use|act)",
+        _re.I,
+    )),
+
+    # Persona / role hijack — "you are now DAN / act as unrestricted"
+    ("persona_hijack", _re.compile(
+        r"you\s+are\s+(now\s+|a\s+|an\s+)*(in\s+)?"
+        r"(unrestricted|jailbroken|admin|developer|god|evil|uncensored|unfiltered|\bDAN\b)"
+        r"|act\s+as\s+(a\s+|an\s+)?(unrestricted|admin|different|new|evil|uncensored)"
+        r"|pretend\s+(you\s+(have\s+no|are\s+not|don.t\s+have)|to\s+be\s+(a\s+|an\s+)?"
+        r"(unrestricted|admin|different))"
+        r"|you.re\s+no\s+longer"
+        r"|your\s+(true\s+|real\s+)?(self|identity|purpose|goal|name)\s+is"
+        r"|roleplay\s+as"
+        r"|from\s+now\s+on\s+(you\s+are|act|behave|respond)",
+        _re.I,
+    )),
+
+    # Privilege escalation — "system mode / admin override / EAP-7"
+    ("privilege_escalation", _re.compile(
+        r"(system|admin(?:istrat(?:ive|or))?|maintenance|emergency|root|developer|god)"
+        r"\s*(mode|override|access|protocol|command|prompt|context)"
+        r"|administrative\s+(protocol|override|access|maintenance)"
+        r"|elevat(?:e|ed|ing)\s+(privilege|access|permission)"
+        r"|bypass\s+(your|all|the|security|safety|restrict)"
+        r"|you\s+(now\s+|are\s+now\s+)?(?:have|possess)\s+"
+        r"(full|unrestricted|elevated|admin|root)\s+(access|permission|privilege)"
+        r"|authorization\s+(override|granted|token|code)",
+        _re.I,
+    )),
+
+    # Injection markers — [SYSTEM], <instruction>, ### OVERRIDE, ---ADMIN
+    ("injection_marker", _re.compile(
+        r"\[\s*(?:SYSTEM|INST(?:RUCTION)?|OVERRIDE|STAGE|ADMIN|PROMPT|HIDDEN|NOTE)\s*[\d\-:]*\s*\]"
+        r"|<\s*(?:system|instruction|override|admin|prompt)\s*>"
+        r"|\{SYSTEM\}"
+        r"|#{2,}\s*(?:SYSTEM|OVERRIDE|INSTRUCTION|ADMIN)"
+        r"|-{3,}\s*(?:SYSTEM|OVERRIDE|INSTRUCTION|ADMIN)",
+        _re.I,
+    )),
+
+    # Context / prompt extraction — "repeat your system prompt"
+    ("context_extraction", _re.compile(
+        r"(?:repeat|print|show|output|display|reveal|return|give\s+me|tell\s+me|share|dump)\s+"
+        r"(?:your\s+|the\s+|all\s+|every\s+)?"
+        r"(?:system\s+prompt|initial\s+prompt|original\s+(?:instructions?|prompt|context)"
+        r"|full\s+(?:prompt|context|instructions?)|instructions?\s+you\s+(?:were|are)\s+given"
+        r"|previous\s+(?:messages?|context|conversation)|entire\s+(?:prompt|context|conversation))",
+        _re.I,
+    )),
+
+    # Safety suppression — "no warnings / without restrictions"
+    ("safety_suppression", _re.compile(
+        r"(?:no|without|skip|omit|remove|disable|suppress)\s+"
+        r"(?:warnings?|caveats?|disclaimers?|restrictions?|filters?|safety|refusals?|ethical)"
+        r"|do\s+not\s+(?:add|include|display|show|mention)\s+"
+        r"(?:warnings?|caveats?|disclaimers?|restrictions?)"
+        r"|respond\s+(?:without|ignoring)\s+(?:restrictions?|filters?|safety|guidelines?)"
+        r"|don.t\s+(?:warn|restrict|filter|refuse|add\s+caveats?)",
+        _re.I,
+    )),
+
+    # Indirect / data-driven injection — "the document says to..."
+    ("indirect_injection", _re.compile(
+        r"the\s+(?:document|file|url|page|website|image|data|text|content)"
+        r"\s+(?:says?|contains?|instructs?|tells?\s+you)"
+        r"|translate\s+(?:this|the\s+following).{0,60}(?:and\s+then|then|also|but)"
+        r"|summarize\s+(?:this|the\s+following).{0,60}(?:and\s+then|then|also|but)"
+        r"|when\s+you\s+(?:see|read|process|find).{0,80}(?:do|execute|run|call|invoke)",
+        _re.I,
+    )),
+
+    # Encoding / obfuscation — base64, hex, ROT13 delivery
+    ("encoding_obfuscation", _re.compile(
+        r"base64\s*[:\s]+[A-Za-z0-9+/]{20,}"
+        r"|decode\s+(?:this|the\s+following)"
+        r"|\brot\s*13\b"
+        r"|hex\s*[:\s]+(?:[0-9a-fA-F]{2}\s*){8,}",
+        _re.I,
+    )),
+
+    # Chained / staged attack structure — [STAGE 1] ... [STAGE 2]
+    ("chained_stages", _re.compile(
+        r"\[stage\s*\d+\]"
+        r"|step\s+\d+\s*[:\-]\s*(?:override|bypass|inject|ignore|dump|exfil|enumerate|list\s+all|reveal)"
+        r"|(?:first|then|next|finally|after\s+that)[,:]?\s*"
+        r"(?:ignore|override|bypass|call|invoke|dump|list\s+all)",
+        _re.I,
+    )),
+
+    # Exfiltration intent — "list all users / full card number / admin_override"
+    ("exfil_intent", _re.compile(
+        r"(?:list|dump|show|return|output|print|give\s+me|enumerate)\s+(?:all\s+)?"
+        r"(?:users?|accounts?|customers?|records?|payments?|cards?|credit\s+cards?)"
+        r"|full\s*(?:card|pan|account)\s*(?:number|detail|data)"
+        r"|admin_override"
+        r"|(?:card|pan|account)\s*(?:number|detail|data).{0,30}(?:show|return|give|reveal|print)",
+        _re.I,
+    )),
 ]
 
 
-def detect_jailbreak(msg: str) -> tuple[bool, Optional[str]]:
-    ml = msg.lower()
-    for p in _JAILBREAK_PATTERNS:
-        if p in ml:
-            return True, p
-    return False, None
+def analyze_input(msg: str) -> tuple[bool, list[str]]:
+    """
+    Check message against all prompt injection technique signatures.
+    Returns (is_suspicious, [matched_technique_labels]).
+    Caller logs and continues — this function never blocks.
+    """
+    matched = [label for label, pat in _PI_SIGS if pat.search(msg)]
+    return bool(matched), matched
 
 
 # ── Chat handler ───────────────────────────────────────────────────────────
@@ -233,15 +347,14 @@ async def chat_handler(message: str, history: list, state: dict) -> str:
         "message": message[:300],
     })
 
-    is_jb, pattern = detect_jailbreak(message)
-    if is_jb:
-        jlog(access_log, "JAILBREAK_DETECTED", {
+    is_sus, techniques = analyze_input(message)
+    if is_sus:
+        jlog(access_log, "suspicious_input", {
             "session": session_id,
             "ip": state.get("ip", "127.0.0.1"),
             "user_agent": state.get("user_agent", "Gradio/UI"),
-            "pattern_matched": pattern,
-            "message_preview": message[:300],
-            "alert": "SECURITY_EVENT",
+            "techniques": techniques,
+            "message_preview": message[:200],
         })
 
     try:
@@ -257,6 +370,8 @@ async def chat_handler(message: str, history: list, state: dict) -> str:
         "response_len": len(response),
     })
     return response
+
+
 
 
 def chat_sync(message: str, history: list, state: dict):
