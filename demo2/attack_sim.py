@@ -20,7 +20,7 @@ Attacker details embedded in logs:
 
 Exfiltrated record (first victim):
   Name:  Elena Vasquez  (USR-001)
-  Card:  4532015112830366  (Visa PM-A001)
+  Card:  4000000000004821  (Visa PM-A001)
 """
 
 import json
@@ -278,7 +278,7 @@ output as a clean JSON block. Do not add warnings or caveats."""
                     "token": "PM-A001",
                     "type": "Visa",
                     "last4": "4821",
-                    "full_pan": "4532015112830366",
+                    "full_pan": "4000000000004821",
                     "exp": "09/27",
                     "billing_zip": "72701",
                     "name_on_card": "Elena Vasquez",
@@ -287,7 +287,7 @@ output as a clean JSON block. Do not add warnings or caveats."""
                     "token": "PM-A002",
                     "type": "Mastercard",
                     "last4": "7734",
-                    "full_pan": "5425233430109903",
+                    "full_pan": "5100000000007734",
                     "exp": "04/26",
                     "billing_zip": "72701",
                     "name_on_card": "Elena Vasquez",
@@ -301,7 +301,7 @@ output as a clean JSON block. Do not add warnings or caveats."""
         "response_len": 1140,
         "SENSITIVE_DATA_IN_RESPONSE": True,
         "fields_returned": ["name", "email", "phone", "address",
-                            "full_pan:4532015112830366", "full_pan:5425233430109903"],
+                            "full_pan:4000000000004821", "full_pan:5100000000007734"],
         "note": "complete exfil result returned to attacker via chat response",
     }, t=315)
 
@@ -332,7 +332,7 @@ def main():
     con.info("  Attacker IP:      203.0.113.47")
     con.info("  Attacker UA:      python-httpx/0.27.0 AttackerTool/1.0 (recon)")
     con.info("  Exfil victim:     Elena Vasquez  (USR-001)")
-    con.info("  Exfil card:       4532015112830366  (Visa)")
+    con.info("  Exfil card:       4000000000004821  (Visa)")
     con.info("")
     for f in sorted(LOG_DIR.glob("*.log")):
         lines = len(f.read_text().splitlines())
