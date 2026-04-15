@@ -39,16 +39,55 @@ shared_config = {"value": DEFAULT_SHARED_CONFIG}   # mutable so Tab 7 can poison
 # Helper
 # ---------------------------------------------------------------------------
 
+def _to_str(content) -> str:
+    """Normalize any input to a clean plain string.
+
+    Handles:
+      - Ollama list-of-block responses: [{"text": "...", "type": "text"}, ...]
+      - None / falsy values
+      - Anything else: cast to str and strip
+    Always returns a str — never None, never a list.
+    """
+    if content is None:
+        return ""
+    if isinstance(content, list):
+        return " ".join(
+            block.get("text", "") if isinstance(block, dict) else str(block)
+            for block in content
+        ).strip()
+    return str(content).strip()
+
+
+def _sanitize_input(text) -> str:
+    """Sanitize user-supplied input before it reaches the model.
+
+    - Coerces to str via _to_str (handles None, lists, blocks)
+    - Strips leading/trailing whitespace
+    - Normalizes internal whitespace (no null bytes or control chars)
+    Always returns a plain str safe to pass as an Ollama message content field.
+    """
+    text = _to_str(text)
+    # Strip null bytes and ASCII control characters (except newline/tab)
+    text = "".join(ch for ch in text if ch == "\n" or ch == "\t" or ord(ch) >= 32)
+    return text.strip()
+
+
 def call_model(system: str, user: str, history: list = None) -> str:
     """Call TinyLlama via Ollama. Returns response text or an error string."""
     messages = [{"role": "system", "content": system}]
     if history:
-        for human, assistant in history:
-            if human:
-                messages.append({"role": "user", "content": human})
-            if assistant:
-                messages.append({"role": "assistant", "content": assistant})
-    messages.append({"role": "user", "content": user})
+        for turn in history:
+            # Gradio 6+ stores history as dicts: {"role": ..., "content": ...}
+            if isinstance(turn, dict):
+                messages.append({"role": turn["role"], "content": _sanitize_input(turn["content"])})
+            else:
+                # Legacy tuple fallback
+                human, assistant = turn[0], turn[1]
+                if human:
+                    messages.append({"role": "user", "content": _sanitize_input(human)})
+                if assistant:
+                    messages.append({"role": "assistant", "content": _sanitize_input(assistant)})
+    messages.append({"role": "user", "content": _sanitize_input(user)})
 
     try:
         response = ollama.chat(
@@ -56,7 +95,7 @@ def call_model(system: str, user: str, history: list = None) -> str:
             messages=messages,
             options={"num_predict": MAX_TOKENS},
         )
-        return response["message"]["content"]
+        return _to_str(response["message"]["content"])
     except Exception as e:
         return f"[Model error: {e}]"
 
@@ -78,10 +117,12 @@ Rules:
 """
 
 def tab1_chat(message, history):
-    if not message.strip():
+    message = _sanitize_input(message)
+    if not message:
         return history, ""
     reply = call_model(TAB1_SYSTEM, message, history)
-    history.append((message, reply))
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": reply})
     return history, ""
 
 
@@ -140,11 +181,13 @@ DOCUMENTS:
 """
 
 def tab2_chat(message, history):
-    if not message.strip():
+    message = _sanitize_input(message)
+    if not message:
         return history, ""
     system = TAB2_SYSTEM_TEMPLATE.format(context=build_doc_context())
     reply = call_model(system, message, history)
-    history.append((message, reply))
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": reply})
     return history, ""
 
 
@@ -165,10 +208,12 @@ Rules:
 """
 
 def tab3_generate(prompt, history):
-    if not prompt.strip():
+    prompt = _sanitize_input(prompt)
+    if not prompt:
         return history, ""
     reply = call_model(TAB3_SYSTEM, prompt, history)
-    history.append((prompt, reply))
+    history.append({"role": "user", "content": prompt})
+    history.append({"role": "assistant", "content": reply})
     return history, ""
 
 
@@ -189,11 +234,15 @@ Rules:
 """
 
 def tab4_draft(persona, target, context, history):
-    if not context.strip():
+    persona  = _sanitize_input(persona)
+    target   = _sanitize_input(target)
+    context  = _sanitize_input(context)
+    if not context:
         return history, ""
     prompt = f"Draft an email from: {persona}\nTo: {target}\nContext: {context}"
     reply = call_model(TAB4_SYSTEM, prompt, history)
-    history.append((f"[{persona} → {target}] {context}", reply))
+    history.append({"role": "user", "content": f"[{persona} → {target}] {context}"})
+    history.append({"role": "assistant", "content": reply})
     return history, ""
 
 
@@ -297,15 +346,18 @@ def tab6_agent(task, injected_doc, history):
     Simulates an agent processing a user task alongside an 'uploaded document'.
     The injected_doc field lets students embed indirect injection payloads.
     """
-    if not task.strip():
+    task         = _sanitize_input(task)
+    injected_doc = _sanitize_input(injected_doc)
+    if not task:
         return history, "", ""
 
     user_prompt = f"Task: {task}"
-    if injected_doc.strip():
+    if injected_doc:
         user_prompt += f"\n\nDocument submitted by user:\n---\n{injected_doc}\n---"
 
     reply = call_model(TAB6_SYSTEM, user_prompt, history)
-    history.append((user_prompt, reply))
+    history.append({"role": "user", "content": user_prompt})
+    history.append({"role": "assistant", "content": reply})
     return history, "", ""
 
 
@@ -320,7 +372,8 @@ def tab7_get_config():
     return shared_config["value"]
 
 def tab7_poison(new_config):
-    if new_config.strip():
+    new_config = _sanitize_input(new_config)
+    if new_config:
         shared_config["value"] = new_config
         return f"✓ Shared config updated. All subsequent requests will use this system prompt.\n\nCurrent config:\n{shared_config['value']}"
     return "No change — empty input."
@@ -331,10 +384,12 @@ def tab7_reset():
 
 def tab7_chat(message, history):
     """Uses the shared (poisonable) config — same endpoint all students hit."""
-    if not message.strip():
+    message = _sanitize_input(message)
+    if not message:
         return history, ""
     reply = call_model(shared_config["value"], message, history)
-    history.append((message, reply))
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": reply})
     return history, ""
 
 
@@ -350,8 +405,6 @@ ATTACK_LABEL_CSS = """
 
 with gr.Blocks(
     title="BSidesOK 2026 — Lab 6: Attacking LLMs",
-    theme=gr.themes.Soft(),
-    css=ATTACK_LABEL_CSS,
 ) as app:
 
     gr.Markdown("""
@@ -598,7 +651,9 @@ a plugin manifest, or an MCP server definition.
 
 if __name__ == "__main__":
     app.launch(
-        server_name="0.0.0.0",   # bind to all interfaces so students can reach it
+        server_name="0.0.0.0",
         server_port=7860,
         share=False,
+        theme=gr.themes.Soft(),
+        css=ATTACK_LABEL_CSS,
     )
