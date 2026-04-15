@@ -1,7 +1,9 @@
 {
   "agent": {
     "workspace": "/workspace",
-    "skill_dirs": ["skills"],
+    "skill_dirs": [
+      "skills"
+    ],
     "max_steps": 10,
     "step_timeout_seconds": 30
   },
@@ -13,10 +15,5 @@
   "state": {
     "backend": "file",
     "path": "/lab5/state"
-  },
-  "security": {
-    "tool_allowlist_enabled": true,
-    "audit_log": true,
-    "max_retries": 3
   }
 }

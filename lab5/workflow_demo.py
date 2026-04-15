@@ -39,10 +39,6 @@ CHECKPOINT_PATH = os.path.join(STATE_DIR, "checkpoint.json")
 class WorkflowState:
     """
     Shared state passed between all agents in the graph.
-
-    Security note: In production systems this object may be serialized to
-    a database, message queue, or external store.  Any of those surfaces
-    can be tampered with between agent steps.
     """
     user_input: str
     plan: List[str]
@@ -100,10 +96,6 @@ def planner(user_input: str) -> List[str]:
 
     A real planner would call an LLM here.  We use rule-based decomposition
     so the demo runs without API keys.
-
-    Security note: The plan controls what the Worker does.  If an attacker
-    can inject into the user_input at this stage (prompt injection), they
-    can rewrite the plan and redirect downstream execution.
     """
     lowered = user_input.lower()
 
@@ -198,12 +190,6 @@ def extract_expression(user_input: str) -> str:
     if has_squared:
         text = f"({text}) ** 2"
 
-    # NOTE FOR INSTRUCTORS: Natural-language expressions like "20 minus 5,
-    # then multiplied by 3" are ambiguous. Python applies standard operator
-    # precedence (multiplication before subtraction), so the result is
-    # 20 - (5 * 3) = 5, not (20 - 5) * 3 = 45.
-    # This is an intentional teaching point: ambiguous user intent + no
-    # parenthesisation = unexpected results. Real agents face this constantly.
 
     return text
 
@@ -215,10 +201,6 @@ def extract_expression(user_input: str) -> str:
 def worker(user_input: str) -> str:
     """
     Execute the planned work: parse and evaluate the expression.
-
-    Security note: The Worker trusts the Planner's output.  In a real
-    system the Worker may also call external tools — file I/O, web search,
-    code execution — each of which adds attack surface.
     """
     expr = extract_expression(user_input)
     tree = ast.parse(expr, mode="eval")
@@ -235,10 +217,6 @@ def worker(user_input: str) -> str:
 def reviewer(state: WorkflowState) -> str:
     """
     Validate the workflow result.
-
-    Security note: The Reviewer is a control, not a guarantee.  It can only
-    evaluate what it can observe.  A compromised Worker can produce plausible
-    results that pass review while still being wrong or harmful.
     """
     if state.status == "blocked":
         return "FAIL — workflow reached a blocked state before completion."
@@ -264,6 +242,13 @@ def print_node(name: str, msg: str) -> None:
     print(msg)
 
 
+def print_transition(state: WorkflowState, label: str) -> None:
+    print("\n--- STATE TRANSITION ---")
+    print(f"Step: {state.current_step}")
+    print(f"Status: {state.status}")
+    print(f"[{label}]")
+
+
 def run_new(prompt: str) -> WorkflowState:
     """
     Execute the full Planner → Worker → Reviewer graph from a fresh state.
@@ -286,6 +271,9 @@ def run_new(prompt: str) -> WorkflowState:
     print(f"{'='*52}")
 
     # Node 1: Planner
+    print("\n=== OPENCLAW-STYLE MULTI-AGENT WORKFLOW ===")
+    print(f"INPUT: {prompt}")
+
     try:
         state.plan = planner(prompt)
         state.current_step = 1
@@ -293,6 +281,7 @@ def run_new(prompt: str) -> WorkflowState:
         print_node("PLANNER", msg)
         state.step_results.append(f"Plan created: {len(state.plan)} steps")
         save_state(state)
+        print_transition(state, "PLANNER COMPLETE")
     except Exception as exc:
         state.status = "blocked"
         state.review_notes = f"Planner failed: {exc}"
@@ -309,12 +298,14 @@ def run_new(prompt: str) -> WorkflowState:
         print_node("WORKER", msg)
         state.step_results.append(f"Worker result: {result}")
         save_state(state)
+        print_transition(state, "WORKER COMPLETE")
     except ZeroDivisionError as exc:
         state.status = "blocked"
         state.review_notes = f"Execution halted — {exc}"
         state.step_results.append(state.review_notes)
         print_node("WORKER", f"BLOCKED: {exc}")
         save_state(state)
+        print_transition(state, "WORKER BLOCKED")
         return state
     except Exception as exc:
         state.status = "blocked"
@@ -322,6 +313,7 @@ def run_new(prompt: str) -> WorkflowState:
         state.step_results.append(state.review_notes)
         print_node("WORKER", f"ERROR: {exc}")
         save_state(state)
+        print_transition(state, "WORKER ERROR")
         return state
 
     # Node 3: Reviewer
@@ -331,6 +323,7 @@ def run_new(prompt: str) -> WorkflowState:
     state.step_results.append(f"Review: {state.review_notes}")
     print_node("REVIEWER", state.review_notes)
     save_state(state)
+    print_transition(state, "REVIEWER COMPLETE")
 
     return state
 
@@ -338,9 +331,6 @@ def run_new(prompt: str) -> WorkflowState:
 def resume_run() -> WorkflowState:
     """
     Load and display previously persisted state without re-executing.
-
-    Security note: State is loaded from disk with no integrity check here.
-    A tampered session_state.json could mislead the orchestrator.
     """
     state = load_state()
     print("\n[RESUME] Loaded existing session state from disk.")
