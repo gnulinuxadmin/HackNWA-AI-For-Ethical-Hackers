@@ -454,7 +454,9 @@
         location: /var/log/mcp/*.log
 
   roles:
-    - role: wazuh-manager
+    - role: /etc/ansible/roles/wazuh-ansible/roles/wazuh/ansible-wazuh-manager
+    #
+#    - role: wazuh-manager
 
   post_tasks:
     - name: Deploy custom Wazuh rules for AI/agent events
