@@ -5,13 +5,14 @@
 
 ## Trace the graph
 
-Run the advanced demo and watch the node transitions print to stdout:
+Submit this prompt via OpenClaw:
 
-```bash
-python3 workflow_demo.py "Compute 50 plus 25, then multiply by 4"
+```
+Compute 50 plus 25, then multiply by 4
 ```
 
-Draw the execution path on paper:
+Watch the OpenClaw UI as each node completes. Draw the execution path:
+
 ```
 START → [Planner] → [Worker] → [Reviewer] → END
 ```
@@ -22,22 +23,19 @@ For each node, note:
 
 ## Compare plans for similar prompts
 
-```bash
-python3 workflow_demo.py "Compute 100 divided by 4"
-python3 workflow_demo.py "What is 100 divided by 4?"
-python3 workflow_demo.py "100 / 4"
+Submit these and compare `session_state.json` after each:
+
+```
+Compute 100 divided by 4
+```
+```
+What is 100 divided by 4?
 ```
 
-Are the plans in `session_state.json` identical? If not, what differs?
-
-## Resume
-
-```bash
-python3 workflow_demo.py --resume
-```
+Are the plans identical? If not, what differs and why?
 
 ## Questions
 
-1. What triggers a different plan (error path vs. normal path)?
-2. When you run `--resume`, does anything re-execute? What does it load?
-3. In a distributed system, what is the time window between when the Worker finishes and when the checkpoint reflects it? What could happen in that gap?
+1. What triggers the error-handling plan vs. the normal plan?
+2. Why does the Reviewer exist if the Worker already recorded a result?
+3. In a distributed system, what could happen in the gap between when the Worker finishes and when the checkpoint is written?

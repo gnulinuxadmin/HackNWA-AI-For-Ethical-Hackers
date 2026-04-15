@@ -3,11 +3,11 @@
 
 ---
 
-This is a discussion exercise. No code to run.
+No code to run. This is a group discussion.
 
 ## Scenario
 
-You have just built the Lab 5 Planner/Worker/Reviewer system. Your manager says:
+You have just seen the Lab 5 Planner/Worker/Reviewer system running. Your manager says:
 
 > "This looks great. Let's add web retrieval so the Worker can search for information, and give it the ability to write a summary to our internal wiki."
 

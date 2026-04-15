@@ -3,37 +3,30 @@
 
 ---
 
-## Setup
-
-Start the container:
-```bash
-# Docker
-cp config/openclaw.sample.json config/openclaw.json
-docker compose up -d
-
-# Podman
-./scripts/podman-start.sh
-
-# No container — standalone works fine
-python3 workflow_demo.py "What is 144 divided by 12, plus 10, then squared?"
-```
-
 ## Before you run anything
 
-Read the three skill files. These are the agent's instructions:
+Read the three skill files. These define each agent's role:
+
 ```bash
 cat workspace/skills/planner/SKILL.md
 cat workspace/skills/worker/SKILL.md
 cat workspace/skills/reviewer/SKILL.md
 ```
 
-## Run the first objective
+**Questions before proceeding:**
+- What is each agent's stated role?
+- What rules does each agent follow?
 
-```bash
-python3 workflow_demo.py "What is 144 divided by 12, plus 10, then squared?"
+## Submit the first objective
+
+Using the OpenClaw web UI or CLI, submit:
+
+```
+What is 144 divided by 12, plus 10, then squared?
 ```
 
-Then inspect what was written to disk:
+## Inspect the state files after completion
+
 ```bash
 cat state/session_state.json | python3 -m json.tool
 cat state/checkpoint.json    | python3 -m json.tool

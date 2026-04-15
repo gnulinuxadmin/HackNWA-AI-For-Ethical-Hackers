@@ -1,7 +1,7 @@
 # LangGraph Primer — Lab 5 Reference
 **BSidesOK 2026: Securing Agentic AI Systems**
 
-Read this before starting the lab exercises. It covers the concepts you need — nothing more.
+Read this before starting the lab exercises.
 
 ---
 
@@ -13,20 +13,20 @@ LangGraph builds **stateful, multi-actor applications** with LLMs. It extends La
 - **Edges** define transitions between nodes
 - **State** is a shared object persisted at every step
 
-The key capability for this lab: the graph can **pause, save its state, and resume later** — even on a different machine. This is the checkpoint system.
+The key capability for this lab: the graph can **pause, save its state, and resume later**. This is the checkpoint system.
 
 ---
 
 ## How the Lab Maps to LangGraph
 
-| LangGraph concept   | Lab 5 equivalent                        |
-|---------------------|-----------------------------------------|
-| `StateGraph`        | `run_new()` orchestration function      |
-| Node function       | `planner()`, `worker()`, `reviewer()`   |
-| `add_edge()`        | Sequential function calls               |
-| `MemorySaver`       | `save_state()` writing JSON to disk     |
-| `get_state()`       | `load_state()` reading JSON from disk   |
-| `invoke()`          | `run_new(prompt)`                       |
+| LangGraph concept | Lab 5 equivalent                     |
+|-------------------|--------------------------------------|
+| `StateGraph`      | OpenClaw workflow orchestration      |
+| Node function     | planner, worker, reviewer skills     |
+| `add_edge()`      | Sequential skill handoffs            |
+| `MemorySaver`     | session_state.json written to disk   |
+| `get_state()`     | checkpoint.json read by orchestrator |
+| `invoke()`        | Prompt submitted via OpenClaw UI/CLI |
 
 In a real LangGraph deployment:
 
@@ -59,30 +59,27 @@ Planner → Worker → Reviewer
 Real systems also use:
 
 - **Hierarchical** — an Orchestrator delegates to sub-agents, each with different tool access
-- **Collaborative** — peer agents share a message bus and can write to each other's state
+- **Collaborative** — peer agents share a message bus and write to shared state
 - **Competitive** — a Proposer and a Critic: one generates, the other challenges the output
-
-Each pattern changes who can read and write shared state.
 
 ---
 
 ## Goal Decomposition
 
-The Planner converts a high-level user objective into an ordered list of executable steps. Two things to keep in mind:
+The Planner converts a high-level user objective into an ordered list of steps:
 
-1. **The plan controls the Worker.** If the plan is wrong or manipulated, the Worker follows it anyway.
-2. **Plans are not contracts.** A Worker with enough autonomy can deviate. The Reviewer's job is to catch that.
+1. The plan controls what the Worker does. If the plan is wrong, the Worker follows it anyway.
+2. Plans are not contracts. A Worker with enough autonomy can deviate. The Reviewer's job is to catch that.
 
 ---
 
 ## State and Checkpoints
 
-State is serialized to disk after every node:
+State is written to disk after every node:
 
 ```
 state/session_state.json  ← full workflow state
 state/checkpoint.json     ← lightweight step + status only
 ```
 
-The checkpoint lets an orchestrator poll progress without deserializing the full session. This also means the checkpoint is a separate file that can diverge from the session state — intentionally or not.
-
+The checkpoint lets an orchestrator poll progress without loading the full session. This also means the two files can diverge — worth understanding as we go deeper in the workshop.

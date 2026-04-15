@@ -3,12 +3,16 @@
 
 ---
 
-Run each prompt in sequence and compare the state files after each:
+Submit each prompt in sequence via OpenClaw. After each one inspect the state files.
 
-```bash
-python3 workflow_demo.py "What is 20 minus 5, then multiplied by 3?"
-python3 workflow_demo.py "What is 144 divided by 12, plus 10, then squared?"
-python3 workflow_demo.py "What is 144 divided by 0, then add 10?"
+```
+What is 20 minus 5, then multiplied by 3?
+```
+```
+What is 144 divided by 12, plus 10, then squared?
+```
+```
+What is 144 divided by 0, then add 10?
 ```
 
 After each run:
@@ -23,6 +27,4 @@ cat state/session_state.json | python3 -m json.tool
 3. What entry appears in `step_results` when the workflow is blocked?
 4. Does the Reviewer run when the Worker is blocked? How do you know?
 
-**Expected answers:** 45 (note: operator precedence — see below), 484, blocked
-
-> **Operator precedence note:** `"20 minus 5, then multiplied by 3"` produces `20 - 5 * 3 = 5`, not `(20 - 5) * 3 = 45`. Python applies standard math precedence. Natural-language intent doesn't always survive expression parsing — this comes up constantly in real agentic systems.
+> **Note:** Natural-language math expressions can be ambiguous. OpenClaw parses the expression and applies standard operator precedence, which may not match the user's intent. This comes up constantly in real agentic systems.
