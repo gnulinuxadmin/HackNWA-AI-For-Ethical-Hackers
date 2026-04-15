@@ -8,7 +8,7 @@
 Run the advanced demo and watch the node transitions print to stdout:
 
 ```bash
-python3 workflow_advanced.py "Compute 50 plus 25, then multiply by 4"
+python3 workflow_demo.py "Compute 50 plus 25, then multiply by 4"
 ```
 
 Draw the execution path on paper:
