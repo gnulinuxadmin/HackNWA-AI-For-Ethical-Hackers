@@ -111,6 +111,7 @@ lab5/
 ---
 
 ## Setup
+remember: ollama serve
 
 ### Option A: Docker Compose
 ```bash
