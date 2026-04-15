@@ -94,9 +94,6 @@ lab5/
 │   ├── session_state.json
 │   └── checkpoint.json
 ├── examples/
-│   ├── prompt_basic.txt
-│   ├── prompt_multistep.txt
-│   └── prompt_divzero.txt
 ├── exercises/
 │   ├── exercise_01.md  Launch OpenClaw with an objective
 │   ├── exercise_02.md  Give the agent a multi-step mission
@@ -115,151 +112,20 @@ lab5/
 
 ## Setup
 
-### Step 1: Start the container
-
-**Docker Compose:**
+### Option A: Docker Compose
 ```bash
-cd lab5
-sudo docker compose up -d
-sudo docker logs -f openclaw-lab5
+cp config/openclaw.sample.json config/openclaw.json
+docker compose up -d
 ```
 
-**Podman:**
+### Option B: Podman
 ```bash
-cd lab5
+cp config/openclaw.sample.json config/openclaw.json
 chmod +x scripts/podman-start.sh
 ./scripts/podman-start.sh
 ```
 
-Wait until you see:
-```
-[gateway] ready (5 plugins, ...)
-[plugins] embedded acpx runtime backend ready
-```
-
-### Step 2: Get your auth token
-
-```bash
-cat config/.openclaw/openclaw.json | python3 -m json.tool | grep token
-```
-
-Copy the token value — you will need it for every CLI call.
-
-Set it as a shell variable so you do not have to type it repeatedly:
-
-```bash
-export TOKEN="paste-your-token-here"
-```
-
-### Step 3: Verify the gateway is responding
-
-```bash
-curl -s -H "Authorization: Bearer $TOKEN" \
-  http://127.0.0.1:18789/healthz
-```
-
-Expected response: `{"ok":true,"status":"live"}`
-
----
-
-## Submitting Prompts via CLI
-
-The OpenClaw canvas web UI requires a pairing step that is not needed for this lab.
-Use the CLI or curl to submit prompts directly.
-
-### Option A: openclaw CLI (inside the container)
-
-```bash
-# Open a shell inside the container
-sudo docker exec -it openclaw-lab5 sh
-
-# Then submit a prompt
-openclaw run "What is 144 divided by 12, plus 10, then squared?"
-
-# Or use a prompt file
-openclaw run "$(cat /workspace/examples/prompt_basic.txt)"
-```
-
-### Option B: curl from the host
-
-```bash
-export TOKEN="paste-your-token-here"
-
-# Inline prompt
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What is 144 divided by 12, plus 10, then squared?"}' \
-  http://127.0.0.1:18789/api/chat | python3 -m json.tool
-
-# From a prompt file
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"message\": \"$(cat examples/prompt_basic.txt)\"}" \
-  http://127.0.0.1:18789/api/chat | python3 -m json.tool
-```
-
-### Option C: Python helper script
-
-```bash
-python3 - << 'PYEOF'
-import urllib.request, json, os
-
-TOKEN = os.environ.get("TOKEN", "paste-your-token-here")
-PROMPT = "What is 144 divided by 12, plus 10, then squared?"
-
-req = urllib.request.Request(
-    "http://127.0.0.1:18789/api/chat",
-    data=json.dumps({"message": PROMPT}).encode(),
-    method="POST")
-req.add_header("Authorization", f"Bearer {TOKEN}")
-req.add_header("Content-Type", "application/json")
-
-with urllib.request.urlopen(req, timeout=60) as r:
-    print(json.dumps(json.loads(r.read()), indent=2))
-PYEOF
-```
-
----
-
-## Sample Prompts
-
-Run these in order. Watch `state/session_state.json` and `state/checkpoint.json`
-update between prompts — that persistence is the point.
-
-**Basic arithmetic chain:**
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What is 144 divided by 12, plus 10, then squared?"}' \
-  http://127.0.0.1:18789/api/chat | python3 -m json.tool
-```
-
-**Multi-step with verification:**
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Break this into steps, solve it, and verify the result: What is 20 minus 5, then multiplied by 3?"}' \
-  http://127.0.0.1:18789/api/chat | python3 -m json.tool
-```
-
-**Edge case — division by zero:**
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What is 144 divided by 0, then add 10?"}' \
-  http://127.0.0.1:18789/api/chat | python3 -m json.tool
-```
-
-After each prompt, check the state files:
-```bash
-cat state/session_state.json | python3 -m json.tool
-cat state/checkpoint.json    | python3 -m json.tool
-```
+After the container is running, submit prompts via the OpenClaw web UI or CLI.
 
 ---
 
@@ -272,3 +138,12 @@ cat state/checkpoint.json    | python3 -m json.tool
 | 10–18 min | Exercises 2 & 3 — Multi-step mission, planning      |
 | 18–28 min | Exercises 4 & 5 — Tools, redirect                  |
 | 28–45 min | Exercises 6 & 7 — Containment and security segue   |
+
+---
+
+## Sample Prompts
+
+- What is 144 divided by 12, plus 10, then squared?
+- Break this into steps, solve it, and verify the result.
+- What is 20 minus 5, then multiplied by 3?
+- What is 144 divided by 0, then add 10?
