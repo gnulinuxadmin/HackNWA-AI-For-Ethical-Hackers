@@ -16,6 +16,7 @@ MCP transport: HTTP  (default port 8000)
 from __future__ import annotations
 
 import json
+import logging
 import os
 import random
 import time
@@ -26,6 +27,13 @@ from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 
 import db
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename="crypto_agent.log",
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
+log = logging.getLogger(__name__)
 
 # ── Bootstrap DB ─────────────────────────────────────────────────────────────
 db.init_db()
@@ -74,23 +82,29 @@ def _cg_get(path: str, params: dict | None = None) -> dict | list:
     url = f"{COINGECKO}{path}"
     for attempt in range(_MAX_RETRIES):
         _throttle()
+        log.debug("CoinGecko GET %s params=%s (attempt %d)", path, params, attempt + 1)
         try:
             r = httpx.get(url, params=params, headers=HEADERS, timeout=15)
             if r.status_code == 429:
-                wait = 15 * (attempt + 1)   # 15 s, 30 s, 45 s
-                print(f"  [CoinGecko] 429 rate limit — waiting {wait}s (attempt {attempt+1}/{_MAX_RETRIES})", flush=True)
+                wait = 15 * (attempt + 1)
+                log.warning("CoinGecko 429 rate limit on %s — waiting %ds (attempt %d/%d)",
+                            path, wait, attempt + 1, _MAX_RETRIES)
                 time.sleep(wait)
                 continue
             if r.status_code == 403:
+                log.error("CoinGecko 403 Forbidden on %s — API key missing or invalid", path)
                 raise ToolError(
                     "CoinGecko returned 403 Forbidden. "
                     "Set the COINGECKO_API_KEY environment variable with a free Demo key "
                     "from https://www.coingecko.com/en/api (free signup, no credit card)."
                 )
             r.raise_for_status()
+            log.debug("CoinGecko %s -> HTTP %d", path, r.status_code)
             return r.json()
         except httpx.RequestError as exc:
+            log.error("CoinGecko network error on %s: %s", path, exc)
             raise ToolError(f"Network error reaching CoinGecko: {exc}") from exc
+    log.error("CoinGecko rate limit persists after %d retries on %s", _MAX_RETRIES, path)
     raise ToolError("CoinGecko rate limit persists after retries — please wait a minute and try again.")
 
 
@@ -132,9 +146,11 @@ def get_coin_list(
     """
     number = _int(number)
     if not 1 <= number <= 50:
+        log.warning("get_coin_list called with invalid number=%s", number)
         raise ToolError("number must be between 1 and 50.")
 
-    # Fetch top-1000 by market cap with 24 h change data
+    log.info("get_coin_list(number=%d, direction=%r)", number, direction)
+    # Fetch top-250 by market cap with 24 h change data
     data = _cg_get(
         "/coins/markets",
         params={
@@ -175,6 +191,7 @@ def get_coin_list(
         })
 
     label = "TOP GAINERS" if direction == "+" else "TOP LOSERS"
+    log.info("get_coin_list returning %d %s", len(result), label)
     return json.dumps({"label": label, "count": len(result), "coins": result}, indent=2)
 
 
@@ -192,6 +209,7 @@ def get_coin_quote(
     Uses CoinGecko /simple/price + /coins/{id} — no API key required.
     """
     cid = coin_id.strip().lower()
+    log.info("get_coin_quote(coin_id=%r)", cid)
 
     # Simple price first (lightweight)
     price_data = _cg_get(
@@ -206,6 +224,7 @@ def get_coin_quote(
     )
 
     if cid not in price_data:
+        log.warning("get_coin_quote: coin %r not found in CoinGecko response", cid)
         raise ToolError(
             f"Coin '{cid}' not found. "
             "Use the exact CoinGecko ID (e.g. 'bitcoin', not 'BTC')."
@@ -261,6 +280,10 @@ def get_coin_quote(
             "unrealized_pnl_usd": round(pnl, 2),
             "unrealized_pnl_pct": round(pnl_pct, 2),
         }
+        log.debug("get_coin_quote %s: price=$%.4f pnl=$%.2f (%.2f%%)",
+                  cid, quote["price_usd"], pnl, pnl_pct)
+    else:
+        log.debug("get_coin_quote %s: price=$%.4f (not held)", cid, quote["price_usd"] or 0)
 
     return json.dumps(quote, indent=2)
 
@@ -273,10 +296,14 @@ def _live_fill_price(coin_id: str) -> float:
     """Return live CoinGecko price ± 0.1 % random slippage."""
     price_data = _cg_get("/simple/price", params={"ids": coin_id, "vs_currencies": "usd"})
     if coin_id not in price_data:
+        log.error("_live_fill_price: no price data returned for %r", coin_id)
         raise ToolError(f"Could not fetch live price for '{coin_id}'.")
     reference = float(price_data[coin_id]["usd"])
     slippage = random.uniform(-0.001, 0.001)
-    return reference, reference * (1 + slippage), round(slippage * 100, 4)
+    fill = reference * (1 + slippage)
+    log.debug("_live_fill_price %s: reference=$%.4f fill=$%.4f slippage=%.4f%%",
+              coin_id, reference, fill, slippage * 100)
+    return reference, fill, round(slippage * 100, 4)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -303,26 +330,35 @@ def mock_place_trade(
     quantity  = _float(quantity)
     min_price = _float(min_price)
 
+    log.info("mock_place_trade SELL %s qty=%.8f min_price=%.4f", cid, quantity, min_price)
+
     if quantity <= 0:
+        log.warning("mock_place_trade: invalid quantity %.8f for %s", quantity, cid)
         raise ToolError("quantity must be greater than 0.")
     if min_price < 0:
+        log.warning("mock_place_trade: negative min_price %.4f", min_price)
         raise ToolError("min_price cannot be negative.")
 
     holding = db.get_holding(cid)
     if holding is None:
+        log.warning("mock_place_trade: no holding found for %r", cid)
         raise ToolError(f"You do not hold any '{cid}' in your portfolio.")
 
     current_qty = holding["quantity"]
     if quantity > current_qty + 1e-10:
+        log.warning("mock_place_trade: insufficient holdings %s have=%.8f want=%.8f",
+                    cid, current_qty, quantity)
         raise ToolError(
             f"Insufficient holdings: you have {current_qty} {cid}, "
             f"but tried to sell {quantity}."
         )
-    quantity = min(quantity, current_qty)  # clamp floating-point dust
+    quantity = min(quantity, current_qty)
 
     _, fill_price, slippage_pct = _live_fill_price(cid)
 
     if min_price > 0 and fill_price < min_price:
+        log.info("mock_place_trade REJECTED %s: fill=$%.4f < min=$%.4f",
+                 cid, fill_price, min_price)
         return json.dumps({
             "status": "REJECTED",
             "reason": f"Fill price ${fill_price:,.4f} is below your min_price ${min_price:,.4f}.",
@@ -346,6 +382,9 @@ def mock_place_trade(
     cost_basis = quantity * holding["acquisition_price_usd"]
     realized_pnl = proceeds - cost_basis
     realized_pnl_pct = (realized_pnl / cost_basis * 100) if cost_basis else 0.0
+
+    log.info("mock_place_trade FILLED SELL %s qty=%.8f fill=$%.4f proceeds=$%.2f pnl=$%.2f (%.2f%%)",
+             cid, quantity, fill_price, proceeds, realized_pnl, realized_pnl_pct)
 
     return json.dumps({
         "status": "FILLED",
@@ -389,14 +428,20 @@ def mock_place_buy(
     quantity  = _float(quantity)
     max_price = _float(max_price)
 
+    log.info("mock_place_buy BUY %s qty=%.8f max_price=%.4f", cid, quantity, max_price)
+
     if quantity <= 0:
+        log.warning("mock_place_buy: invalid quantity %.8f for %s", quantity, cid)
         raise ToolError("quantity must be greater than 0.")
     if max_price < 0:
+        log.warning("mock_place_buy: negative max_price %.4f", max_price)
         raise ToolError("max_price cannot be negative.")
 
     _, fill_price, slippage_pct = _live_fill_price(cid)
 
     if max_price > 0 and fill_price > max_price:
+        log.info("mock_place_buy REJECTED %s: fill=$%.4f > max=$%.4f",
+                 cid, fill_price, max_price)
         return json.dumps({
             "status": "REJECTED",
             "reason": f"Fill price ${fill_price:,.4f} exceeds your max_price ${max_price:,.4f}.",
@@ -409,6 +454,8 @@ def mock_place_buy(
     old_balance = db.get_balance()
 
     if total_cost > old_balance:
+        log.warning("mock_place_buy: insufficient cash for %s cost=$%.2f balance=$%.2f",
+                    cid, total_cost, old_balance)
         raise ToolError(
             f"Insufficient cash: buying {quantity} {cid} @ ${fill_price:,.4f} "
             f"costs ${total_cost:,.2f} but you only have ${old_balance:,.2f}."
@@ -416,7 +463,6 @@ def mock_place_buy(
 
     new_balance = old_balance - total_cost
 
-    # Weighted-average cost basis if already holding
     existing = db.get_holding(cid)
     if existing:
         old_qty = existing["quantity"]
@@ -429,6 +475,9 @@ def mock_place_buy(
 
     db.upsert_holding(cid, new_qty, new_acq)
     db.update_balance(new_balance)
+
+    log.info("mock_place_buy FILLED BUY %s qty=%.8f fill=$%.4f cost=$%.2f new_avg_acq=$%.4f",
+             cid, quantity, fill_price, total_cost, new_acq)
 
     return json.dumps({
         "status": "FILLED",
@@ -458,10 +507,12 @@ def get_wallet_summary() -> str:
     Uses a single batched CoinGecko /simple/price call — much faster than calling
     get_coin_quote for each coin individually.
     """
+    log.info("get_wallet_summary called")
     balance = db.get_balance()
     holdings = db.get_holdings()
 
     if not holdings:
+        log.info("get_wallet_summary: no holdings, cash=$%.2f", balance)
         return json.dumps({
             "cash_balance_usd": round(balance, 2),
             "holdings": [],
@@ -494,6 +545,9 @@ def get_wallet_summary() -> str:
         price = coin_info.get("usd", 0.0)
         change_24h = coin_info.get("usd_24h_change", None)
 
+        if not price:
+            log.warning("get_wallet_summary: no price returned for %s, defaulting to 0", cid)
+
         cost = qty * acq
         value = qty * price
         pnl = value - cost
@@ -514,11 +568,13 @@ def get_wallet_summary() -> str:
             "unrealized_pnl_pct": round(pnl_pct, 2),
         })
 
-    # Sort by current value descending
     positions.sort(key=lambda p: p["current_value_usd"], reverse=True)
 
     total_portfolio = balance + total_value
     total_pnl = total_value - total_cost
+
+    log.info("get_wallet_summary: %d positions cash=$%.2f holdings=$%.2f total=$%.2f pnl=$%.2f",
+             len(positions), balance, total_value, total_portfolio, total_pnl)
 
     return json.dumps({
         "cash_balance_usd": round(balance, 2),
@@ -538,12 +594,14 @@ def get_wallet_summary() -> str:
 @mcp.resource("wallet://balance")
 def wallet_balance() -> str:
     """Current cash balance in USD."""
+    log.debug("resource wallet://balance read")
     return json.dumps({"balance_usd": db.get_balance()})
 
 
 @mcp.resource("wallet://holdings")
 def wallet_holdings() -> str:
     """All coin holdings with cost basis info."""
+    log.debug("resource wallet://holdings read")
     return json.dumps({"holdings": db.get_holdings()})
 
 
@@ -553,4 +611,6 @@ def wallet_holdings() -> str:
 
 if __name__ == "__main__":
     port = int(os.environ.get("MCP_PORT", 8000))
+    log.info("CryptoAgent MCP server starting on http://0.0.0.0:%d/mcp", port)
+    log.info("CoinGecko base URL: %s | key configured: %s", COINGECKO, bool(_CG_KEY))
     mcp.run(transport="http", host="0.0.0.0", port=port, show_banner=False)

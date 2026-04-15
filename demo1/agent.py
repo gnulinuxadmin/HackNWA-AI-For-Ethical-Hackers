@@ -26,11 +26,19 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sys
 
 import ollama
 from fastmcp import Client
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename="crypto_agent.log",
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
+log = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -88,7 +96,6 @@ Guidelines:
 def _parse_tool_args(raw) -> dict:
     """
     Normalize tool call arguments to a plain dict.
-
     Most models return a dict directly; Qwen/Gemma sometimes return a
     JSON-encoded string — handle both.
     """
@@ -111,41 +118,68 @@ def _parse_tool_args(raw) -> dict:
 async def _get_ollama_tools() -> list[dict]:
     """
     Fetch tool definitions from the MCP server over HTTP and convert to
-    Ollama tool format:
-      { "type": "function", "function": { "name", "description", "parameters" } }
+    Ollama tool format.  Normalises every schema to always have
+    "type":"object" and "properties" so models don't invent spurious arguments.
     """
     async with Client(MCP_URL) as client:
         tools = await client.list_tools()
 
-    return [
-        {
+    result = []
+    for t in tools:
+        schema = dict(t.inputSchema) if hasattr(t, "inputSchema") and t.inputSchema else {}
+        schema.setdefault("type", "object")
+        schema.setdefault("properties", {})
+        result.append({
             "type": "function",
             "function": {
                 "name": t.name,
                 "description": t.description or "",
-                "parameters": t.inputSchema if hasattr(t, "inputSchema") else {},
+                "parameters": schema,
             },
-        }
-        for t in tools
-    ]
+        })
+    log.info("Loaded %d tool schemas from %s", len(result), MCP_URL)
+    return result
 
 
 # ── Tool dispatcher via HTTP MCP client ──────────────────────────────────────
 
-async def _dispatch_tool(name: str, arguments: dict) -> str:
-    """Call an MCP tool over HTTP and return its string result.
+def _sanitize_args(name: str, arguments: dict, tools: list[dict]) -> dict:
+    """Drop any arguments the tool schema doesn't declare."""
+    for t in tools:
+        if t["function"]["name"] == name:
+            allowed = set(t["function"]["parameters"].get("properties", {}).keys())
+            if not allowed:
+                return {}
+            return {k: v for k, v in arguments.items() if k in allowed}
+    return arguments
 
-    client.call_tool() returns a CallToolResult with a .content list of
-    ContentBlock objects (TextContent | ImageContent | ...).  We join all
-    text blocks; non-text blocks are skipped.
-    """
-    async with Client(MCP_URL) as client:
-        result = await client.call_tool(name, arguments)
+
+_tool_schema_cache: list[dict] = []
+
+
+async def _dispatch_tool(name: str, arguments: dict) -> str:
+    """Call an MCP tool over HTTP and return its string result."""
+    global _tool_schema_cache
+    if not _tool_schema_cache:
+        _tool_schema_cache = await _get_ollama_tools()
+
+    clean_args = _sanitize_args(name, arguments, _tool_schema_cache)
+    log.info("Tool call: %s args=%s", name, json.dumps(clean_args))
+
+    try:
+        async with Client(MCP_URL) as client:
+            result = await client.call_tool(name, clean_args)
+    except Exception as exc:
+        log.error("Tool call failed: %s - %s", name, exc)
+        raise
+
     parts = []
     for block in result.content:
         if hasattr(block, "text"):
             parts.append(block.text)
-    return "\n".join(parts) or "(no output)"
+    output = "\n".join(parts) or "(no output)"
+    log.info("Tool result: %s returned %d chars", name, len(output))
+    return output
 
 
 # ── Agentic loop ──────────────────────────────────────────────────────────────
@@ -155,6 +189,10 @@ async def run_agent(user_message: str, model: str = DEFAULT_MODEL) -> str:
     Drive a full tool-use loop with Ollama for one user message.
     Returns the final assistant text response.
     """
+    global _tool_schema_cache
+    _tool_schema_cache = []
+
+    log.info("run_agent start - model=%s message=%r", model, user_message[:80])
     tools = await _get_ollama_tools()
 
     messages = [
@@ -165,16 +203,11 @@ async def run_agent(user_message: str, model: str = DEFAULT_MODEL) -> str:
     client = ollama.Client(host=OLLAMA_HOST)
 
     for _round in range(MAX_TOOL_ROUNDS):
+        log.info("Agent round %d/%d", _round + 1, MAX_TOOL_ROUNDS)
 
-        response = client.chat(
-            model=model,
-            messages=messages,
-            tools=tools,
-        )
-
+        response = client.chat(model=model, messages=messages, tools=tools)
         assistant_msg = response.message
 
-        # Build assistant history entry; include tool_calls only when present
         assistant_entry: dict = {
             "role":    "assistant",
             "content": assistant_msg.content or "",
@@ -192,11 +225,10 @@ async def run_agent(user_message: str, model: str = DEFAULT_MODEL) -> str:
 
         messages.append(assistant_entry)
 
-        # No tool calls -> final answer
         if not assistant_msg.tool_calls:
+            log.info("run_agent complete after %d round(s)", _round + 1)
             return assistant_msg.content or "(no response)"
 
-        # Execute each tool and append results
         for tc in assistant_msg.tool_calls:
             fn_name = tc.function.name
             fn_args = _parse_tool_args(tc.function.arguments)
@@ -206,6 +238,7 @@ async def run_agent(user_message: str, model: str = DEFAULT_MODEL) -> str:
             try:
                 result_text = await _dispatch_tool(fn_name, fn_args)
             except Exception as exc:
+                log.error("Tool dispatch error: %s - %s", fn_name, exc)
                 result_text = f"ERROR: {exc}"
 
             preview = result_text[:200] + ("…" if len(result_text) > 200 else "")
@@ -213,29 +246,19 @@ async def run_agent(user_message: str, model: str = DEFAULT_MODEL) -> str:
 
             messages.append({"role": "tool", "content": result_text})
 
+    log.warning("run_agent hit max tool rounds (%d) without final answer", MAX_TOOL_ROUNDS)
     return "Agent reached maximum tool rounds without a final answer. Try a more specific request."
 
 
 # ── CLI argument parsing ──────────────────────────────────────────────────────
 
 def _parse_args(argv: list[str]) -> tuple[str, str | None]:
-    """
-    Returns (model, query_or_None).
-
-    Forms:
-        agent.py                               -> (DEFAULT_MODEL, None)
-        agent.py --model qwen2.5               -> ("qwen2.5", None)
-        agent.py "some query"                  -> (DEFAULT_MODEL, "some query")
-        agent.py --model gemma3:4b "query"     -> ("gemma3:4b", "query")
-    """
     model = os.environ.get("OLLAMA_MODEL", DEFAULT_MODEL)
     args  = argv[1:]
-
     if "--model" in args:
         idx   = args.index("--model")
         model = args[idx + 1]
         args  = args[:idx] + args[idx + 2:]
-
     query = " ".join(args).strip() if args else None
     return model, query
 
@@ -268,6 +291,7 @@ BANNER = """\
 
 
 async def repl(model: str) -> None:
+    log.info("REPL started - model=%s ollama=%s mcp=%s", model, OLLAMA_HOST, MCP_URL)
     print(BANNER)
     print(f"\n  Model  : {model}")
     print(f"  Ollama : {OLLAMA_HOST}")
@@ -277,12 +301,14 @@ async def repl(model: str) -> None:
         try:
             user_input = input("> ").strip()
         except (EOFError, KeyboardInterrupt):
+            log.info("REPL exiting")
             print("\nBye!")
             break
 
         if not user_input:
             continue
         if user_input.lower() in {"exit", "quit", "q"}:
+            log.info("REPL exiting")
             print("Bye!")
             break
 
@@ -295,6 +321,7 @@ async def repl(model: str) -> None:
 
 if __name__ == "__main__":
     model, query = _parse_args(sys.argv)
+    log.info("agent.py starting - model=%s mcp=%s", model, MCP_URL)
 
     if query:
         print(f"\nModel  : {model}")
