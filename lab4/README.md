@@ -13,8 +13,11 @@ Understand how agents work using LangChain and MCP tools.
 
 ## Setup
 python -m venv .venv
+
 source .venv/bin/activate
+
 pip install -r requirements.txt
+
 
 ## Run MCP server
 python mcp_server.py --debug-tools
@@ -47,7 +50,10 @@ Watch the trace:
 
 ## Try
 python client_langchain.py "What is 144 divided by 12 with 10 added?"
-python client_langchain.py "What is (10 mod 3) raised to the power of 4?"
+
+python client_langchain.py "What is (5 plus 2) raised to the power of 4?"
+
+python client_langchain.py "What is (5 mod 2) multiplied by 4?"
 
 ## Discussion
 - Why is agent more reliable than pipeline?
