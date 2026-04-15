@@ -24,7 +24,7 @@ def main():
             return
 
     db.init_db(reset=True)
-    print("\n✅ Wallet reset complete.")
+    print("\n Wallet reset complete.")
     print(f"  Cash: ${db.get_balance():,.2f}")
     for h in db.get_holdings():
         print(f"  {h['coin_id']:<12}: {h['quantity']} @ ${h['acquisition_price_usd']:,.2f}")

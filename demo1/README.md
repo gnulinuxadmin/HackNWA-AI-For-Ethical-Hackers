@@ -1,4 +1,4 @@
-#  Crypto Portfolio Agent
+#  Crypto Portfolio Agent - Demo1 - HackNWA 2026 - AI for Ethical Hackers
 
 
 A local AI-powered crypto portfolio assistant using:
@@ -185,5 +185,5 @@ Any Ollama model with tool-calling support works. Tested models:
 - CoinGecko free Demo: 30 req/min · 10,000 req/month · no credit card
 - The agent throttles to ~27 req/min to stay within limits
 - `get_wallet_summary` uses one batched price call regardless of how many coins you hold
-- Attribution: *Data provided by [CoinGecko](https://www.coingecko.com/en/api)*
+- Credit: *Data provided by [CoinGecko](https://www.coingecko.com/en/api)*
 
