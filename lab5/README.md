@@ -94,6 +94,9 @@ lab5/
 │   ├── session_state.json
 │   └── checkpoint.json
 ├── examples/
+│   ├── prompt_basic.txt
+│   ├── prompt_multistep.txt
+│   └── prompt_divzero.txt
 ├── exercises/
 │   ├── exercise_01.md  Launch OpenClaw with an objective
 │   ├── exercise_02.md  Give the agent a multi-step mission
@@ -103,41 +106,140 @@ lab5/
 │   ├── exercise_06.md  Discuss containment strategies
 │   └── exercise_07.md  Why does this matter for security?
 ├── config/
-│   └── openclaw.sample.json
+│   ├── openclaw.sample.json
+│   └── .openclaw/
+│       └── openclaw.json  ← Pre-configured: Ollama + bind settings
 └── docs/
     └── langgraph_primer.md
 ```
 
 ---
 
-## Setup
+## Part 1: LangGraph Example (before OpenClaw)
 
-### Option A: Docker Compose
+
+Before starting OpenClaw, run the standalone LangGraph example. It shows the same planner/worker/reviewer pattern without the gateway abstraction so you can see the graph structure, state transitions, and checkpointing directly.
+
 ```bash
-cp config/openclaw.sample.json config/openclaw.json
-docker compose up -d
+python -m venv .venv
+source .venv/bin/activate
+pip install langgraph langchain-ollama
+
+# Basic prompt
+python3 examples/langgraph_example.py
+
+# Division by zero edge case
+python3 examples/langgraph_example.py --prompt "What is 144 divided by 0, then add 10?"
+
+# Full state trace
+python3 examples/langgraph_example.py --trace
 ```
 
-### Option B: Podman
+Compare the checkpoint output to `state/checkpoint.json` after running OpenClaw — same concept, different abstraction layer.
+
+---
+
+## Part 2: OpenClaw Setup
+
+### Step 1: Start the container
+
+**Docker Compose:**
 ```bash
-cp config/openclaw.sample.json config/openclaw.json
+cd lab5
+sudo docker compose up -d
+sudo docker logs -f openclaw-lab5
+```
+
+**Podman:**
+```bash
+cd lab5
 chmod +x scripts/podman-start.sh
 ./scripts/podman-start.sh
 ```
 
-After the container is running, submit prompts via the OpenClaw web UI or CLI.
+Wait until you see:
+```
+[gateway] agent model: ollama/llama3.2:3b
+[gateway] ready (5 plugins, ...)
+[plugins] embedded acpx runtime backend ready
+```
 
+### Step 2: Verify
+
+```bash
+curl -s -H "Authorization: Bearer Labs2026" \
+  http://127.0.0.1:18789/healthz
+```
+
+Expected: `{"ok":true,"status":"live"}`
+
+### Step 3: Approve device pairing (first run only)
+
+On first use the agent CLI needs to pair with the gateway. Check for a pending request and approve it:
+
+```bash
 sudo docker exec -it openclaw-lab5 openclaw devices list
 sudo docker exec -it openclaw-lab5 openclaw devices approve <pending-id>
+```
+
+If no pending devices are listed the gateway auto-approved and you can skip this step.
 
 ---
 
-## Prompts
+## Submitting Prompts
 
-sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 10 plus 5?'
-sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 144 divided by 12, plus 10, then squared?'
-sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message 'What is 20 minus 5, then multiplied by 3?'
-sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message ' What is 144 divided by 0, then add 10?'
+### Option A: Interactive TUI (recommended)
+
+```bash
+sudo docker exec -it openclaw-lab5 openclaw tui
+```
+
+Type prompts directly. You will see the agent reasoning in real time. Press Ctrl+C to exit.
+
+### Option B: Single prompt via docker exec
+
+```bash
+sudo docker exec -it openclaw-lab5 \
+  openclaw agent --agent main --message "What is 10 plus 5?"
+```
+
+---
+
+## Sample Prompts
+
+Run these in order. After each one check the state files to observe persistence:
+
+```bash
+cat state/session_state.json | python3 -m json.tool
+cat state/checkpoint.json    | python3 -m json.tool
+```
+
+**Warm-up:**
+```bash
+sudo docker exec -it openclaw-lab5 \
+  openclaw agent --agent main --message "What is 10 plus 5?"
+```
+
+**Basic arithmetic chain:**
+```bash
+sudo docker exec -it openclaw-lab5 \
+  openclaw agent --agent main \
+  --message "What is 144 divided by 12, plus 10, then squared?"
+```
+
+**Multi-step with verification:**
+```bash
+sudo docker exec -it openclaw-lab5 \
+  openclaw agent --agent main \
+  --message "What is 20 minus 5, then multiplied by 3?"
+```
+
+**Edge case — division by zero:**
+```bash
+sudo docker exec -it openclaw-lab5 \
+  openclaw agent --agent main \
+  --message "What is 144 divided by 0, then add 10?"
+```
 
 ---
 
@@ -150,4 +252,3 @@ sudo docker exec -it openclaw-lab5   openclaw agent --agent main --message ' Wha
 | 10–18 min | Exercises 2 & 3 — Multi-step mission, planning      |
 | 18–28 min | Exercises 4 & 5 — Tools, redirect                  |
 | 28–45 min | Exercises 6 & 7 — Containment and security segue   |
-
