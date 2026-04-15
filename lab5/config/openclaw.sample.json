@@ -3,8 +3,24 @@
     "workspace": "/workspace",
     "skill_dirs": ["skills"],
     "max_steps": 10,
-    "step_timeout_seconds": 30,
-    "model": "ollama/llama3.2:3b"
+    "step_timeout_seconds": 30
+  },
+  "models": {
+    "providers": {
+      "ollama": {
+        "apiKey": "ollama-local",
+        "baseUrl": "http://host.docker.internal:11434",
+        "api": "ollama"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "ollama/llama3.2:3b",
+        "fallbacks": []
+      }
+    }
   },
   "gateway": {
     "mode": "local",
@@ -14,10 +30,5 @@
   "state": {
     "backend": "file",
     "path": "/lab5/state"
-  },
-  "providers": {
-    "ollama": {
-      "baseUrl": "http://host.docker.internal:11434"
-    }
   }
 }
