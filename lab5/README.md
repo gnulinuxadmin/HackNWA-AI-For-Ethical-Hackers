@@ -1,7 +1,5 @@
 # Lab 5: Stateful Multi-Agent Workflows with OpenClaw
 
----
-
 ## Overview
 
 This lab moves past single-prompt LLM interactions into stateful agentic systems. You will observe how an autonomous agent decomposes goals, delegates to specialized sub-agents, persists state across steps, and why each of those properties matters for security.
