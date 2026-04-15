@@ -6,8 +6,16 @@ Schema:
   holdings(coin_id, quantity, acquisition_price_usd)
 """
 
+import logging
 import sqlite3
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename="crypto_agent.log",
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
+log = logging.getLogger(__name__)
 
 DB_PATH = Path(__file__).parent / "crypto_wallet.db"
 
@@ -31,6 +39,7 @@ def init_db(reset: bool = False) -> None:
     """Create tables and seed initial data if the DB doesn't exist (or reset=True)."""
     if reset and DB_PATH.exists():
         DB_PATH.unlink()
+        log.info("Database reset: removed %s", DB_PATH)
 
     with _connect() as conn:
         conn.executescript("""
@@ -46,7 +55,6 @@ def init_db(reset: bool = False) -> None:
             );
         """)
 
-        # Seed only if account row is missing
         row = conn.execute("SELECT COUNT(*) AS n FROM account").fetchone()
         if row["n"] == 0:
             conn.execute(
@@ -57,14 +65,19 @@ def init_db(reset: bool = False) -> None:
                 "INSERT OR IGNORE INTO holdings (coin_id, quantity, acquisition_price_usd) VALUES (?,?,?)",
                 SEED_HOLDINGS,
             )
+            log.info("Database initialised with seed data (balance=$%.2f, %d holdings)",
+                     SEED_BALANCE, len(SEED_HOLDINGS))
+        else:
+            log.info("Database already exists, skipping seed")
 
 
-# ── Read helpers ─────────────────────────────────────────────────────────────
+# ── Read helpers ──────────────────────────────────────────────────────────────
 
 def get_balance() -> float:
     with _connect() as conn:
         row = conn.execute("SELECT balance_usd FROM account WHERE id=1").fetchone()
-        return float(row["balance_usd"]) if row else 0.0
+        balance = float(row["balance_usd"]) if row else 0.0
+    return balance
 
 
 def get_holdings() -> list[dict]:
@@ -92,6 +105,7 @@ def update_balance(new_balance: float) -> None:
             "UPDATE account SET balance_usd=? WHERE id=1",
             (round(new_balance, 8),)
         )
+    log.info("Balance updated to $%.2f", new_balance)
 
 
 def upsert_holding(coin_id: str, quantity: float, acquisition_price_usd: float) -> None:
@@ -103,8 +117,11 @@ def upsert_holding(coin_id: str, quantity: float, acquisition_price_usd: float) 
                 quantity              = excluded.quantity,
                 acquisition_price_usd = excluded.acquisition_price_usd
         """, (coin_id.lower(), quantity, acquisition_price_usd))
+    log.info("Holding upserted: %s qty=%.8f acq=$%.4f",
+             coin_id, quantity, acquisition_price_usd)
 
 
 def delete_holding(coin_id: str) -> None:
     with _connect() as conn:
         conn.execute("DELETE FROM holdings WHERE coin_id=?", (coin_id.lower(),))
+    log.info("Holding deleted: %s", coin_id)
