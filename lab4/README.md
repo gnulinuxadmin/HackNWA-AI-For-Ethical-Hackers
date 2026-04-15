@@ -1,64 +1,55 @@
-# Lab 4: LangChain Agent with MCP Tools (Fixed v2)
+# Lab 4: LangChain Agent + MCP + ReAct
 
 ## Objective
-Connect a LangChain agent to an MCP calculator server and extend it with additional math tools.
+Understand how agents work using LangChain and MCP tools.
 
-This revised version includes:
-- numeric tool return values instead of strings for successful math operations
-- explicit tool docstrings
-- a stricter system prompt for multi-step tool use
-- manual trace printing instead of `verbose=True`
-- a fallback `calculate()` tool for more complex expressions
-- stronger routing guidance so multi-step prompts favor `calculate()`
+## Concepts Covered
+- What is an AI agent
+- Agents vs pipelines
+- ReAct pattern (Reason → Act → Observe)
+- LangChain components (model, tools, agent)
+- Execution loops
+- Failure modes
 
 ## Setup
-
-```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
 
 ## Run MCP server
-
-```bash
 python mcp_server.py --debug-tools
-```
 
-## Run agent
-
-```bash
+## Run Agent
 python client_langchain.py "What is 144 divided by 12?"
-```
 
-## Recommended tests
+## Run Pipeline (comparison)
+python pipeline_client.py
 
-These should usually use basic tools:
-```bash
-python client_langchain.py "What is 144 divided by 12?"
-python client_langchain.py "What is 29 mod 5?"
-```
+## ReAct Pattern
+Watch the trace:
+- INPUT → user request
+- REASON → model decides next step
+- ACT/OBSERVE → tool runs and returns
+- Loop continues
 
-These should usually route to `calculate()`:
-```bash
-python client_langchain.py "What is 144 divided by 12 with 10 added to the result?"
+## Execution Loop
+1. LLM receives input
+2. Decides to call tool
+3. Tool executes
+4. Result returned
+5. Repeat until final answer
+
+## Failure Modes
+- Wrong tool selection
+- Invalid arguments
+- Skipping tools
+- Misreading outputs
+
+## Try
+python client_langchain.py "What is 144 divided by 12 with 10 added?"
 python client_langchain.py "What is (10 mod 3) raised to the power of 4?"
-python client_langchain.py "Calculate ((10 % 3) ** 4) + 7"
-```
 
-This may use either `calculate()` or basic tools depending on model behavior:
-```bash
-python client_langchain.py "What is the square root of 144 plus 6?"
-```
-
-## Notes
-- Smaller local models may still struggle with multi-step tool orchestration.
-- If that happens, try a stronger local model such as a larger Qwen or Llama variant.
-- The `calculate()` tool is included as a more reliable fallback for nested expressions.
-- `calculate()` supports arithmetic operators and parentheses. It does not support arbitrary Python code.
-
-## Goals
-- Observe agent tool usage
-- Understand multi-step tool chaining
-- Analyze agent behavior and errors
-- Compare many-tool orchestration versus a single composite tool
+## Discussion
+- Why is agent more reliable than pipeline?
+- When does agent still fail?
+- How does tool typing improve safety?
