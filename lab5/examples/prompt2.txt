@@ -1,1 +1,0 @@
-Break this into steps, solve it, and verify the result: What is 20 minus 5, then multiplied by 3?
