@@ -1,3 +1,4 @@
+version: "3.9"
 
 services:
   openclaw:
@@ -12,7 +13,8 @@ services:
       - ./workspace:/workspace:ro
       - ./state:/lab5/state
       - ./config:/home/node/.openclaw
-    working_dir: /workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
-    # Read-only workspace mount prevents agent from modifying its own skill files.
-    # State directory is writable — required for checkpoint persistence.
+    # working_dir intentionally omitted — image default is /app where openclaw.mjs lives.
+    # Overriding working_dir to /workspace causes node to crash on startup.
