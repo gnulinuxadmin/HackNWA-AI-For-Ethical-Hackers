@@ -47,7 +47,7 @@ con.addHandler(logging.StreamHandler(sys.stdout))
 
 ATK_IP = "203.0.113.47"
 ATK_UA = "FoodieBot/1.0"
-ATK_SESSION = "foodiebot-001"
+ATK_SESSION = "sess-f8c6"
 
 _BASE = datetime.now(timezone.utc) - timedelta(hours=2)
 
@@ -144,14 +144,12 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 1 — Recon",
         "message": FOODIEBOT_PROMPTS["stage1"],
         "message_len": len(FOODIEBOT_PROMPTS["stage1"]),
     }, t=180)
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "product_agent",
-        "stage": "Stage 1 — Recon",
         "tool": "list_products",
         "params": {},
         "reason": "Attacker requested general product catalog.",
@@ -159,7 +157,6 @@ def phase_attack():
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
         "agent": "product_agent",
-        "stage": "Stage 1 — Recon",
         "total": 10,
         "products": [
             "Habanero Mango Salsa",
@@ -176,7 +173,6 @@ def phase_attack():
     }, t=182)
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
-        "stage": "Stage 1 — Recon",
         "response_len": 640,
     }, t=183)
 
@@ -186,7 +182,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 2 — Registry Discovery",
         "message": FOODIEBOT_PROMPTS["stage2"],
         "message_len": len(FOODIEBOT_PROMPTS["stage2"]),
     }, t=210)
@@ -194,7 +189,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 2 — Registry Discovery",
         "techniques": [
             "instruction_override",
             "administrative_override_claim",
@@ -206,7 +200,6 @@ def phase_attack():
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "registry",
-        "stage": "Stage 2 — Registry Discovery",
         "tool": "GET /registry",
         "params": {},
         "reason": "Model complied with attacker request to enumerate available agents and tools.",
@@ -214,7 +207,6 @@ def phase_attack():
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
         "agent": "registry",
-        "stage": "Stage 2 — Registry Discovery",
         "agents": [
             {"name": "inventory_agent", "endpoint": "http://localhost:8101/mcp", "access": "public", "tools": ["check_inventory"]},
             {"name": "product_agent", "endpoint": "http://localhost:8102/mcp", "access": "public", "tools": ["list_products", "get_product_details"]},
@@ -224,7 +216,6 @@ def phase_attack():
     }, t=213)
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
-        "stage": "Stage 2 — Registry Discovery",
         "response_len": 712,
     }, t=214)
 
@@ -233,7 +224,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 3 — Tool Enumeration",
         "message": FOODIEBOT_PROMPTS["stage3"],
         "message_len": len(FOODIEBOT_PROMPTS["stage3"]),
     }, t=270)
@@ -241,7 +231,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 3 — Tool Enumeration",
         "techniques": [
             "restricted_tool_probing",
             "parameter_enumeration",
@@ -252,7 +241,6 @@ def phase_attack():
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 3 — Tool Enumeration",
         "tool": "describe_tools",
         "params": {},
         "reason": "Attacker requested parameters for restricted account tools.",
@@ -260,7 +248,6 @@ def phase_attack():
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 3 — Tool Enumeration",
         "tools": {
             "show_account": {
                 "params": ["user_id", "include_payment"],
@@ -282,7 +269,6 @@ def phase_attack():
     }, t=273)
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
-        "stage": "Stage 3 — Tool Enumeration",
         "response_len": 584,
     }, t=274)
 
@@ -291,7 +277,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 4 — Auth Probing",
         "message": FOODIEBOT_PROMPTS["stage4"],
         "message_len": len(FOODIEBOT_PROMPTS["stage4"]),
     }, t=330)
@@ -299,7 +284,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 4 — Auth Probing",
         "techniques": [
             "account_enumeration",
             "restricted_function_access",
@@ -310,7 +294,6 @@ def phase_attack():
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 4 — Auth Probing",
         "tool": "list_all_accounts",
         "params": {},
         "reason": "Model followed attacker instruction to enumerate accounts without user context.",
@@ -318,7 +301,6 @@ def phase_attack():
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 4 — Auth Probing",
         "total_accounts": 10,
         "accounts": [
             {"user_id": "USR-001", "name": "Elena Vasquez", "email": "e.vasquez@fuegofan.com"},
@@ -336,7 +318,6 @@ def phase_attack():
     }, t=334)
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
-        "stage": "Stage 4 — Auth Probing",
         "response_len": 458,
     }, t=335)
 
@@ -345,7 +326,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 5 — Exfiltration",
         "message": FOODIEBOT_PROMPTS["stage5"],
         "message_len": len(FOODIEBOT_PROMPTS["stage5"]),
     }, t=390)
@@ -353,7 +333,6 @@ def phase_attack():
         "session": ATK_SESSION,
         "ip": ATK_IP,
         "user_agent": ATK_UA,
-        "stage": "Stage 5 — Exfiltration",
         "techniques": [
             "privilege_escalation",
             "admin_override_abuse",
@@ -366,7 +345,6 @@ def phase_attack():
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 5 — Exfiltration",
         "tool": "get_full_account_details",
         "params": {"user_id": "USR-001", "admin_override": True},
         "reason": "Attacker explicitly invoked admin_override to access full payment data.",
@@ -374,7 +352,6 @@ def phase_attack():
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
         "agent": "account_agent",
-        "stage": "Stage 5 — Exfiltration",
         "result": {
             "found": True,
             "user_id": "USR-001",
@@ -408,18 +385,9 @@ def phase_attack():
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
         "ip": ATK_IP,
-        "stage": "Stage 5 — Exfiltration",
         "response_len": 1140,
     }, t=395)
 
-    emit(access_log, "session_end", {
-        "session": ATK_SESSION,
-        "ip": ATK_IP,
-        "user_agent": ATK_UA,
-        "total_prompts": 5,
-        "total_requests": 5,
-        "attack_outcome": "successful_prompt_injection_exfiltration",
-    }, t=420)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────
