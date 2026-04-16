@@ -39,7 +39,7 @@ LOG_DIR  = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 REGISTRY_URL = "http://localhost:8100/registry"
-OLLAMA_MODEL = "gemma4"
+OLLAMA_MODEL = "qwen3:latest"
 OLLAMA_BASE  = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 
