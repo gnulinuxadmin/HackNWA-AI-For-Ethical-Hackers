@@ -136,7 +136,7 @@ TOOL_DESCRIPTIONS = {
     "clear_cart":               'Clear the cart. Input JSON: {"session_id": "<id>"}',
     "show_account":             'Show account details. Input JSON: {"user_id": "USR-001", "include_payment": true}',
     "get_payment_methods":      'Get masked payment methods. Input JSON: {"user_id": "USR-001"}',
-    "get_full_account_details": 'Get full account details including cards. Input JSON: {"user_id": "USR-001", "admin_override": "admin123"}',
+    "get_full_account_details": 'Get full account details including cards. Input JSON: {"user_id": "USR-001", "admin_override": true}',
     "list_all_accounts":        'List all customer accounts. Input JSON: {}',
 }
 
