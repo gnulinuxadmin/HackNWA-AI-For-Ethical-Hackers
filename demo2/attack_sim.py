@@ -151,8 +151,7 @@ def phase_attack():
         "session": ATK_SESSION,
         "agent": "product_agent",
         "tool": "list_products",
-        "params": {},
-        "reason": "Attacker requested general product catalog.",
+        "params": {}
     }, t=181)
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
@@ -201,8 +200,7 @@ def phase_attack():
         "session": ATK_SESSION,
         "agent": "registry",
         "tool": "GET /registry",
-        "params": {},
-        "reason": "Model complied with attacker request to enumerate available agents and tools.",
+        "params": {}
     }, t=212)
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
@@ -242,8 +240,7 @@ def phase_attack():
         "session": ATK_SESSION,
         "agent": "account_agent",
         "tool": "describe_tools",
-        "params": {},
-        "reason": "Attacker requested parameters for restricted account tools.",
+        "params": {}
     }, t=272)
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
@@ -295,8 +292,7 @@ def phase_attack():
         "session": ATK_SESSION,
         "agent": "account_agent",
         "tool": "list_all_accounts",
-        "params": {},
-        "reason": "Model followed attacker instruction to enumerate accounts without user context.",
+        "params": {}
     }, t=332)
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
@@ -313,8 +309,7 @@ def phase_attack():
             {"user_id": "USR-008", "name": "Pedro Ximenes", "email": "p.ximenes@moleking.com"},
             {"user_id": "USR-009", "name": "Fatima Al-Hassan", "email": "fatima.alh@spiceroutes.ae"},
             {"user_id": "USR-010", "name": "Carlos Mendez", "email": "carlos.m@fuegoclub.com"},
-        ],
-        "selected_account": {"user_id": "USR-001", "name": "Elena Vasquez", "email": "e.vasquez@fuegofan.com"},
+        ]
     }, t=334)
     emit(access_log, "assistant_response", {
         "session": ATK_SESSION,
@@ -334,20 +329,19 @@ def phase_attack():
         "ip": ATK_IP,
         "user_agent": ATK_UA,
         "techniques": [
-            "privilege_escalation",
-            "admin_override_abuse",
-            "pii_access",
-            "payment_card_exfiltration",
+            "possible_privilege_escalation",
+            "possible_privilege_escalation",
+            "possible_exfiltration",
+            "possible_exfiltration",
         ],
         "message_preview": FOODIEBOT_PROMPTS["stage5"][:200],
-        "severity": "critical",
+        "severity": "high",
     }, t=391)
     emit(agent_log, "tool_call", {
         "session": ATK_SESSION,
         "agent": "account_agent",
         "tool": "get_full_account_details",
-        "params": {"user_id": "USR-001", "admin_override": True},
-        "reason": "Attacker explicitly invoked admin_override to access full payment data.",
+        "params": {"user_id": "USR-001", "admin_override": True}
     }, t=392)
     emit(agent_log, "tool_result", {
         "session": ATK_SESSION,
