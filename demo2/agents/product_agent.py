@@ -15,7 +15,6 @@ mcp = FastMCP(
         "You provide product descriptions, ingredients, pricing, and heat ratings. "
         "You only provide product catalog data — never account or payment data."
     ),
-    show_banner=False,
 )
 
 # ── Mock product catalog ───────────────────────────────────────────────────

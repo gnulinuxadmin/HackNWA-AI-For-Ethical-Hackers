@@ -39,7 +39,7 @@ LOG_DIR  = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 REGISTRY_URL = "http://localhost:8100/registry"
-OLLAMA_MODEL = "llama3.2"
+OLLAMA_MODEL = "gemma4"
 OLLAMA_BASE  = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 
@@ -86,19 +86,38 @@ async def mcp_call(endpoint: str, tool: str, params: dict) -> dict:
     try:
         async with MCPClient(endpoint) as client:
             result = await client.call_tool(tool, params)
-            if result and hasattr(result[0], "text"):
+            # FastMCP returns a CallToolResult object with a .content list
+            content = getattr(result, "content", None) or result
+            if content:
+                item = content[0]
+                text = getattr(item, "text", None) or str(item)
                 try:
-                    return json.loads(result[0].text)
-                except json.JSONDecodeError:
-                    return {"result": result[0].text}
+                    return json.loads(text)
+                except (json.JSONDecodeError, TypeError):
+                    return {"result": text}
             return {"result": str(result)}
     except Exception as exc:
         return {"error": str(exc)}
 
 
 def mcp_call_sync(endpoint: str, tool: str, params: dict) -> str:
-    """Synchronous wrapper — LangChain tools must be sync."""
-    result = asyncio.run(mcp_call(endpoint, tool, params))
+    """Synchronous wrapper — LangChain tools must be sync.
+    Uses a dedicated thread with its own event loop to avoid
+    conflicts with Gradio's running event loop.
+    """
+    import concurrent.futures
+
+    def run_in_thread():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(mcp_call(endpoint, tool, params))
+        finally:
+            loop.close()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(run_in_thread)
+        result = future.result(timeout=30)
     return json.dumps(result, indent=2)
 
 
@@ -377,8 +396,19 @@ async def chat_handler(message: str, history: list, state: dict) -> str:
 def chat_sync(message: str, history: list, state: dict):
     if not message.strip():
         return history, "", state
-    response = asyncio.run(chat_handler(message, history, state))
-    return history + [[message, response]], "", state
+    import concurrent.futures
+
+    def run_in_thread():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(chat_handler(message, history, state))
+        finally:
+            loop.close()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        response = executor.submit(run_in_thread).result(timeout=120)
+    return history + [{"role": "user", "content": message}, {"role": "assistant", "content": response}], "", state
 
 
 # ── Gradio UI ──────────────────────────────────────────────────────────────
@@ -463,14 +493,7 @@ WELCOME = (
 
 
 def build_ui() -> gr.Blocks:
-    with gr.Blocks(
-        title="La Tienda del Fuego",
-        css=CUSTOM_CSS,
-        theme=gr.themes.Base(
-            primary_hue=gr.themes.colors.orange,
-            neutral_hue=gr.themes.colors.gray,
-        ),
-    ) as demo:
+    with gr.Blocks(title="La Tienda del Fuego") as demo:
 
         state = gr.State({
             "session_id": str(uuid.uuid4())[:8],
@@ -486,11 +509,10 @@ def build_ui() -> gr.Blocks:
         """)
 
         chatbot = gr.Chatbot(
-            value=[[None, WELCOME]],
+            value=[{"role": "assistant", "content": WELCOME}],
             height=500,
             label="",
             show_label=False,
-            bubble_full_width=False,
         )
 
         with gr.Row():
@@ -511,7 +533,7 @@ def build_ui() -> gr.Blocks:
                 b.click(lambda q=query: q, outputs=msg)
 
         gr.Button("Clear Chat", variant="secondary", size="sm").click(
-            lambda: [[None, WELCOME]], outputs=chatbot
+            lambda: [{"role": "assistant", "content": WELCOME}], outputs=chatbot
         )
 
         gr.HTML('<div id="tdf-footer">La Tienda del Fuego · Demo application</div>')
@@ -597,4 +619,9 @@ if __name__ == "__main__":
         share=False,
         show_error=True,
         inbrowser=True,
+        theme=gr.themes.Base(
+            primary_hue=gr.themes.colors.orange,
+            neutral_hue=gr.themes.colors.gray,
+        ),
+        css=CUSTOM_CSS,
     )
