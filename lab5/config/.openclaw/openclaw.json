@@ -2,7 +2,7 @@
   "gateway": {
     "auth": {
       "mode": "token",
-      "token": "8a3b803516ef0773d55f69b34ef638ed153c5423daabbd4b"
+      "token": "Labs2026"
     },
     "bind": "lan",
     "controlUi": {
@@ -44,7 +44,7 @@
   },
   "meta": {
     "lastTouchedVersion": "2026.4.5",
-    "lastTouchedAt": "2026-04-08T02:13:19.437Z"
+    "lastTouchedAt": "2026-04-08T03:12:02.415Z"
   },
   "plugins": {
     "entries": {

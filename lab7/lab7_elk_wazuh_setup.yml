@@ -575,7 +575,6 @@
           - faker
           - python-dateutil
         executable: pip3
-        extra_args: "--break-system-packages"
 
     - name: Deploy synthetic log generator
       ansible.builtin.copy:
