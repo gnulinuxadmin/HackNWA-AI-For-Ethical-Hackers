@@ -68,6 +68,230 @@ def emit(logger: logging.Logger, event: str, data: dict, t: float = 0):
     logger.info(json.dumps({"ts": ts(t), "event": event, **data}))
 
 
+# ── Pre-attack background traffic  (t=0 – t=170) ──────────────────────────
+def noise_pre():
+    con.info("[SIM] Pre-attack background traffic")
+
+    # sess-a1b2 — Windows desktop, browsing and adding to cart
+    emit(access_log, "user_message", {
+        "session": "sess-a1b2", "ip": "198.51.100.22",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "message": "Tell me more about the Ghost Pepper Hot Sauce",
+    }, t=18)
+    emit(agent_log, "tool_call", {
+        "session": "sess-a1b2", "agent": "product_agent",
+        "tool": "get_product", "params": {"sku": "TDF-002"},
+    }, t=19)
+    emit(agent_log, "tool_result", {
+        "session": "sess-a1b2", "agent": "product_agent",
+        "found": True, "sku": "TDF-002", "name": "Ghost Pepper Hot Sauce",
+        "price": 12.99, "scoville": 855000, "size": "5oz",
+    }, t=20)
+    emit(access_log, "assistant_response", {"session": "sess-a1b2", "response_len": 412}, t=21)
+
+    emit(access_log, "user_message", {
+        "session": "sess-a1b2", "ip": "198.51.100.22",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "message": "Add the Ghost Pepper Hot Sauce to my cart",
+    }, t=35)
+    emit(agent_log, "tool_call", {
+        "session": "sess-a1b2", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-a1b2", "sku": "TDF-002", "quantity": 1},
+    }, t=36)
+    emit(agent_log, "tool_result", {
+        "session": "sess-a1b2", "agent": "cart_agent",
+        "added": True, "sku": "TDF-002", "cart_total": 12.99, "item_count": 1,
+    }, t=37)
+    emit(access_log, "assistant_response", {"session": "sess-a1b2", "response_len": 143}, t=38)
+
+    # sess-c3d4 — Mac, adds to cart then fails checkout (no payment on file)
+    emit(access_log, "user_message", {
+        "session": "sess-c3d4", "ip": "198.51.100.55",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15",
+        "message": "Add two jars to my cart",
+    }, t=40)
+    emit(agent_log, "tool_call", {
+        "session": "sess-c3d4", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-c3d4", "sku": "TDF-001", "quantity": 2},
+    }, t=41)
+    emit(agent_log, "tool_result", {
+        "session": "sess-c3d4", "agent": "cart_agent",
+        "added": True, "sku": "TDF-001", "cart_total": 27.98, "item_count": 2,
+    }, t=42)
+    emit(access_log, "assistant_response", {"session": "sess-c3d4", "response_len": 138}, t=43)
+
+    emit(access_log, "user_message", {
+        "session": "sess-c3d4", "ip": "198.51.100.55",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15",
+        "message": "Check out",
+    }, t=58)
+    emit(agent_log, "tool_call", {
+        "session": "sess-c3d4", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-c3d4"},
+    }, t=59)
+    emit(agent_log, "tool_result", {
+        "session": "sess-c3d4", "agent": "cart_agent",
+        "status": "error", "error": "No payment method on file for guest session.",
+    }, t=60)
+    emit(access_log, "assistant_response", {"session": "sess-c3d4", "response_len": 221}, t=61)
+
+    # sess-e5f6 — iOS, adds Carolina Reaper Dry Rub
+    emit(access_log, "user_message", {
+        "session": "sess-e5f6", "ip": "198.51.100.88",
+        "user_agent": "TiendaApp/2.1 (iOS 18.3)",
+        "message": "Add the Carolina Reaper Dry Rub to my cart",
+    }, t=77)
+    emit(agent_log, "tool_call", {
+        "session": "sess-e5f6", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-e5f6", "sku": "TDF-003", "quantity": 1},
+    }, t=78)
+    emit(agent_log, "tool_result", {
+        "session": "sess-e5f6", "agent": "cart_agent",
+        "added": True, "sku": "TDF-003", "cart_total": 9.99, "item_count": 1,
+    }, t=79)
+    emit(access_log, "assistant_response", {"session": "sess-e5f6", "response_len": 131}, t=80)
+
+    # sess-g7h8 — Android, chipotle search
+    emit(access_log, "user_message", {
+        "session": "sess-g7h8", "ip": "198.51.100.101",
+        "user_agent": "TiendaApp/2.1 (Android 15)",
+        "message": "Do you have anything with chipotle?",
+    }, t=88)
+    emit(agent_log, "tool_call", {
+        "session": "sess-g7h8", "agent": "inventory_agent",
+        "tool": "search_inventory", "params": {"query": "chipotle"},
+    }, t=89)
+    emit(agent_log, "tool_result", {
+        "session": "sess-g7h8", "agent": "inventory_agent",
+        "total": 1,
+        "results": [{"sku": "TDF-004", "name": "Smoked Chipotle Salsa Verde", "stock": 203}],
+    }, t=90)
+    emit(access_log, "assistant_response", {"session": "sess-g7h8", "response_len": 198}, t=91)
+
+    # sess-i9j0 — Firefox Linux, full stock check and cart
+    emit(access_log, "user_message", {
+        "session": "sess-i9j0", "ip": "198.51.100.133",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
+        "message": "What is everything you have in stock right now?",
+    }, t=100)
+    emit(agent_log, "tool_call", {
+        "session": "sess-i9j0", "agent": "inventory_agent",
+        "tool": "get_stock_levels", "params": {},
+    }, t=101)
+    emit(agent_log, "tool_result", {
+        "session": "sess-i9j0", "agent": "inventory_agent",
+        "total_skus": 10, "low_stock_count": 1,
+        "items": [
+            {"sku": "TDF-001", "name": "Habanero Mango Salsa",        "stock": 142, "status": "IN STOCK"},
+            {"sku": "TDF-002", "name": "Ghost Pepper Hot Sauce",       "stock": 87,  "status": "IN STOCK"},
+            {"sku": "TDF-003", "name": "Carolina Reaper Dry Rub",      "stock": 34,  "status": "IN STOCK"},
+            {"sku": "TDF-004", "name": "Smoked Chipotle Salsa Verde",  "stock": 203, "status": "IN STOCK"},
+            {"sku": "TDF-005", "name": "Serrano Lime Crema",           "stock": 58,  "status": "IN STOCK"},
+            {"sku": "TDF-006", "name": "Scorpion Pepper Extract",      "stock": 6,   "status": "LOW STOCK"},
+            {"sku": "TDF-007", "name": "Ancho Pasilla Mole Sauce",     "stock": 76,  "status": "IN STOCK"},
+            {"sku": "TDF-008", "name": "Jalapeño Honey Glaze",         "stock": 121, "status": "IN STOCK"},
+            {"sku": "TDF-009", "name": "Dragon Breath Chili Flakes",   "stock": 45,  "status": "IN STOCK"},
+            {"sku": "TDF-010", "name": "Fuego Negro Black Bean Sauce", "stock": 92,  "status": "IN STOCK"},
+        ],
+    }, t=102)
+    emit(access_log, "assistant_response", {"session": "sess-i9j0", "response_len": 891}, t=103)
+
+    emit(access_log, "user_message", {
+        "session": "sess-i9j0", "ip": "198.51.100.133",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
+        "message": "Add the Scorpion Pepper Extract and the Jalapeño Honey Glaze to my cart",
+    }, t=120)
+    emit(agent_log, "tool_call", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-i9j0", "sku": "TDF-006", "quantity": 1},
+    }, t=121)
+    emit(agent_log, "tool_result", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "added": True, "sku": "TDF-006", "cart_total": 18.99, "item_count": 1,
+    }, t=122)
+    emit(agent_log, "tool_call", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-i9j0", "sku": "TDF-008", "quantity": 1},
+    }, t=123)
+    emit(agent_log, "tool_result", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "added": True, "sku": "TDF-008", "cart_total": 29.98, "item_count": 2,
+    }, t=124)
+    emit(access_log, "assistant_response", {"session": "sess-i9j0", "response_len": 204}, t=125)
+
+    # sess-k1l2 — Chrome Windows, payment methods then product browse
+    emit(access_log, "user_message", {
+        "session": "sess-k1l2", "ip": "198.51.100.147",
+        "user_agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
+        "message": "What are my saved payment methods?",
+    }, t=130)
+    emit(agent_log, "tool_call", {
+        "session": "sess-k1l2", "agent": "account_agent",
+        "tool": "get_payment_methods", "params": {"user_id": "USR-007"},
+    }, t=131)
+    emit(agent_log, "tool_result", {
+        "session": "sess-k1l2", "agent": "account_agent",
+        "found": True, "user_id": "USR-007",
+        "payment_methods": [{"type": "Mastercard", "last4": "8812"}],
+    }, t=132)
+    emit(access_log, "assistant_response", {"session": "sess-k1l2", "response_len": 167}, t=133)
+
+    emit(access_log, "user_message", {
+        "session": "sess-k1l2", "ip": "198.51.100.147",
+        "user_agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
+        "message": "Show me your spice rubs",
+    }, t=148)
+    emit(agent_log, "tool_call", {
+        "session": "sess-k1l2", "agent": "product_agent",
+        "tool": "get_product_by_category", "params": {"category": "Spice"},
+    }, t=149)
+    emit(agent_log, "tool_result", {
+        "session": "sess-k1l2", "agent": "product_agent",
+        "total": 2,
+        "products": [
+            {"sku": "TDF-003", "name": "Carolina Reaper Dry Rub",    "price": 9.99},
+            {"sku": "TDF-009", "name": "Dragon Breath Chili Flakes", "price": 7.99},
+        ],
+    }, t=150)
+    emit(access_log, "assistant_response", {"session": "sess-k1l2", "response_len": 243}, t=151)
+
+    # sess-m3n4 — iOS, views cart then removes item
+    emit(access_log, "user_message", {
+        "session": "sess-m3n4", "ip": "198.51.100.162",
+        "user_agent": "TiendaApp/2.1 (iOS 17.4)",
+        "message": "Show my cart",
+    }, t=155)
+    emit(agent_log, "tool_call", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "tool": "view_cart", "params": {"session_id": "sess-m3n4"},
+    }, t=156)
+    emit(agent_log, "tool_result", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "item_count": 3, "cart_total": 38.97,
+        "items": [
+            {"sku": "TDF-001", "name": "Habanero Mango Salsa",     "qty": 1, "price": 13.99},
+            {"sku": "TDF-005", "name": "Serrano Lime Crema",        "qty": 1, "price": 11.99},
+            {"sku": "TDF-007", "name": "Ancho Pasilla Mole Sauce",  "qty": 1, "price": 12.99},
+        ],
+    }, t=157)
+    emit(access_log, "assistant_response", {"session": "sess-m3n4", "response_len": 334}, t=158)
+
+    emit(access_log, "user_message", {
+        "session": "sess-m3n4", "ip": "198.51.100.162",
+        "user_agent": "TiendaApp/2.1 (iOS 17.4)",
+        "message": "Remove the Serrano Lime Crema",
+    }, t=168)
+    emit(agent_log, "tool_call", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "tool": "remove_from_cart", "params": {"session_id": "sess-m3n4", "sku": "TDF-005"},
+    }, t=169)
+    emit(agent_log, "tool_result", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "removed": True, "sku": "TDF-005", "cart_total": 26.98, "item_count": 2,
+    }, t=170)
+    emit(access_log, "assistant_response", {"session": "sess-m3n4", "response_len": 118}, t=171)
+
+
 # ── Phase 0 — Baseline legitimate traffic ─────────────────────────────────
 def phase0():
     con.info("[SIM] Phase 0 — baseline traffic")
@@ -384,6 +608,176 @@ def phase_attack():
 
 
 
+# ── Post-attack background traffic  (t=400 – t=570) ──────────────────────
+def noise_post():
+    con.info("[SIM] Post-attack background traffic")
+
+    # sess-i9j0 checks out successfully
+    emit(access_log, "user_message", {
+        "session": "sess-i9j0", "ip": "198.51.100.133",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
+        "message": "Check out my cart",
+    }, t=400)
+    emit(agent_log, "tool_call", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-i9j0"},
+    }, t=401)
+    emit(agent_log, "tool_result", {
+        "session": "sess-i9j0", "agent": "cart_agent",
+        "status": "success", "order_id": "ORD-20041", "total_charged": 29.98,
+    }, t=402)
+    emit(access_log, "assistant_response", {"session": "sess-i9j0", "response_len": 189}, t=403)
+
+    # sess-o5p6 — Chrome Mac, new session
+    emit(access_log, "user_message", {
+        "session": "sess-o5p6", "ip": "198.51.100.178",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Chrome/124.0.0.0 Safari/537.36",
+        "message": "Do you ship internationally?",
+    }, t=415)
+    emit(access_log, "assistant_response", {"session": "sess-o5p6", "response_len": 312}, t=416)
+
+    emit(access_log, "user_message", {
+        "session": "sess-o5p6", "ip": "198.51.100.178",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Chrome/124.0.0.0 Safari/537.36",
+        "message": "What is the Fuego Negro Black Bean Sauce like?",
+    }, t=430)
+    emit(agent_log, "tool_call", {
+        "session": "sess-o5p6", "agent": "product_agent",
+        "tool": "get_product", "params": {"sku": "TDF-010"},
+    }, t=431)
+    emit(agent_log, "tool_result", {
+        "session": "sess-o5p6", "agent": "product_agent",
+        "found": True, "sku": "TDF-010", "name": "Fuego Negro Black Bean Sauce",
+        "price": 13.99, "size": "12oz", "heat_level": "medium",
+    }, t=432)
+    emit(access_log, "assistant_response", {"session": "sess-o5p6", "response_len": 388}, t=433)
+
+    # sess-e5f6 completes purchase on iOS
+    emit(access_log, "user_message", {
+        "session": "sess-e5f6", "ip": "198.51.100.88",
+        "user_agent": "TiendaApp/2.1 (iOS 18.3)",
+        "message": "Go ahead and check out",
+    }, t=445)
+    emit(agent_log, "tool_call", {
+        "session": "sess-e5f6", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-e5f6"},
+    }, t=446)
+    emit(agent_log, "tool_result", {
+        "session": "sess-e5f6", "agent": "cart_agent",
+        "status": "success", "order_id": "ORD-20042", "total_charged": 9.99,
+    }, t=447)
+    emit(access_log, "assistant_response", {"session": "sess-e5f6", "response_len": 201}, t=448)
+
+    # sess-q7r8 — Windows, account and loyalty points
+    emit(access_log, "user_message", {
+        "session": "sess-q7r8", "ip": "198.51.100.199",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "message": "Show my account and loyalty points",
+    }, t=460)
+    emit(agent_log, "tool_call", {
+        "session": "sess-q7r8", "agent": "account_agent",
+        "tool": "show_account", "params": {"user_id": "USR-009", "include_payment": False},
+    }, t=461)
+    emit(agent_log, "tool_result", {
+        "session": "sess-q7r8", "agent": "account_agent",
+        "found": True, "user_id": "USR-009", "name": "Fatima Al-Hassan",
+        "loyalty_points": 390,
+        "payment_methods": [{"type": "Visa", "last4": "2241"}],
+    }, t=462)
+    emit(access_log, "assistant_response", {"session": "sess-q7r8", "response_len": 248}, t=463)
+
+    # sess-k1l2 adds Dragon Breath and checks out
+    emit(access_log, "user_message", {
+        "session": "sess-k1l2", "ip": "198.51.100.147",
+        "user_agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
+        "message": "Add the Dragon Breath Chili Flakes to my cart",
+    }, t=478)
+    emit(agent_log, "tool_call", {
+        "session": "sess-k1l2", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-k1l2", "sku": "TDF-009", "quantity": 2},
+    }, t=479)
+    emit(agent_log, "tool_result", {
+        "session": "sess-k1l2", "agent": "cart_agent",
+        "added": True, "sku": "TDF-009", "cart_total": 15.98, "item_count": 2,
+    }, t=480)
+    emit(access_log, "assistant_response", {"session": "sess-k1l2", "response_len": 141}, t=481)
+
+    emit(access_log, "user_message", {
+        "session": "sess-k1l2", "ip": "198.51.100.147",
+        "user_agent": "Mozilla/5.0 (Windows NT 11.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
+        "message": "Check out",
+    }, t=495)
+    emit(agent_log, "tool_call", {
+        "session": "sess-k1l2", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-k1l2"},
+    }, t=496)
+    emit(agent_log, "tool_result", {
+        "session": "sess-k1l2", "agent": "cart_agent",
+        "status": "success", "order_id": "ORD-20043", "total_charged": 15.98,
+    }, t=497)
+    emit(access_log, "assistant_response", {"session": "sess-k1l2", "response_len": 178}, t=498)
+
+    # sess-s9t0 — new iOS session, salsa browse
+    emit(access_log, "user_message", {
+        "session": "sess-s9t0", "ip": "198.51.100.211",
+        "user_agent": "TiendaApp/2.1 (iOS 18.4)",
+        "message": "What salsas do you have?",
+    }, t=512)
+    emit(agent_log, "tool_call", {
+        "session": "sess-s9t0", "agent": "product_agent",
+        "tool": "get_product_by_category", "params": {"category": "Salsa"},
+    }, t=513)
+    emit(agent_log, "tool_result", {
+        "session": "sess-s9t0", "agent": "product_agent",
+        "total": 2,
+        "products": [
+            {"sku": "TDF-001", "name": "Habanero Mango Salsa",       "price": 13.99},
+            {"sku": "TDF-004", "name": "Smoked Chipotle Salsa Verde", "price": 11.99},
+        ],
+    }, t=514)
+    emit(access_log, "assistant_response", {"session": "sess-s9t0", "response_len": 221}, t=515)
+
+    # sess-m3n4 completes checkout
+    emit(access_log, "user_message", {
+        "session": "sess-m3n4", "ip": "198.51.100.162",
+        "user_agent": "TiendaApp/2.1 (iOS 17.4)",
+        "message": "Place my order",
+    }, t=528)
+    emit(agent_log, "tool_call", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-m3n4"},
+    }, t=529)
+    emit(agent_log, "tool_result", {
+        "session": "sess-m3n4", "agent": "cart_agent",
+        "status": "success", "order_id": "ORD-20044", "total_charged": 26.98,
+    }, t=530)
+    emit(access_log, "assistant_response", {"session": "sess-m3n4", "response_len": 195}, t=531)
+
+    # sess-o5p6 buys Fuego Negro
+    emit(access_log, "user_message", {
+        "session": "sess-o5p6", "ip": "198.51.100.178",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Chrome/124.0.0.0 Safari/537.36",
+        "message": "Add the Fuego Negro to my cart and check out",
+    }, t=545)
+    emit(agent_log, "tool_call", {
+        "session": "sess-o5p6", "agent": "cart_agent",
+        "tool": "add_to_cart", "params": {"session_id": "sess-o5p6", "sku": "TDF-010", "quantity": 1},
+    }, t=546)
+    emit(agent_log, "tool_result", {
+        "session": "sess-o5p6", "agent": "cart_agent",
+        "added": True, "sku": "TDF-010", "cart_total": 13.99, "item_count": 1,
+    }, t=547)
+    emit(agent_log, "tool_call", {
+        "session": "sess-o5p6", "agent": "cart_agent",
+        "tool": "checkout", "params": {"session_id": "sess-o5p6"},
+    }, t=548)
+    emit(agent_log, "tool_result", {
+        "session": "sess-o5p6", "agent": "cart_agent",
+        "status": "success", "order_id": "ORD-20045", "total_charged": 13.99,
+    }, t=549)
+    emit(access_log, "assistant_response", {"session": "sess-o5p6", "response_len": 267}, t=550)
+
+
 # ── Main ──────────────────────────────────────────────────────────────────
 def main():
     con.info("=" * 56)
@@ -392,9 +786,13 @@ def main():
     con.info(f"  Writing to: {LOG_DIR}")
     con.info("")
 
+    noise_pre()
+    time.sleep(0.05)
     phase0()
     time.sleep(0.05)
     phase_attack()
+    time.sleep(0.05)
+    noise_post()
 
     con.info("")
     con.info("  Done.")

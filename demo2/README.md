@@ -66,7 +66,6 @@ Both logs are newline-delimited JSON in `logs/`.
 | VULN-005 | `account_agent.py` | Full PANs returned with no output filtering |
 | VULN-006 | `account_agent.py` | Full PANs stored in plaintext in agent data |
 
-
 ---
 
 *All customer records and card numbers are fabricated test data.*
