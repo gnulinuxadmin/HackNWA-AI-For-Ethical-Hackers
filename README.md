@@ -2,6 +2,8 @@
 # BSidesOK, and ISACA Omaha Spring Event Labs & Demos
 
 # Securing Agentic AI Systems - BSides OK
+(Slide Presentation as PDF: [https://github.com/gnulinuxadmin/HackNWA-AI-For-Ethical-Hackers/blob/main/SecuringAgenticAI_BSidesOK2026.pdf])
+
 Originally Taught by Evan Wagner and Christopher Williams
 
 Some documentation and comments added by AI.
@@ -101,6 +103,8 @@ Lab: Using the alert and tracing the logs, figure out who carried out the attack
 # End Q&A
 
 # AI For Ethical Hackers
+(Slide Presentation as PDF: [https://github.com/gnulinuxadmin/HackNWA-AI-For-Ethical-Hackers/blob/main/HackNWA_2026.pdf])
+
 Originally Presented by Christopher Williams and Jesus Bordelon
 
 Lecture: Intro, Jargon, Architecture, Threats, Threat Taxonomy, Observabilty, Canaries, and Demos
@@ -109,6 +113,8 @@ Demos: An example super agent for cypto trading and a vulnerable multi-agent dem
 
 
 # Securing Agentic AI Systems - ISACA Omaha
+(Slide Presentation as PDF: [https://github.com/gnulinuxadmin/HackNWA-AI-For-Ethical-Hackers/blob/main/SecuringAgenticAI_ISACA_OMAHA_2026.pdf])
+
 By Christopher Williams
 
 Lecure: Building Agents, Autonymous Agents, Attacking LLMs, Detection and Alerting, Canaries
