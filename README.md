@@ -18,13 +18,19 @@ Material covered is completely published between textbooks and open source docum
 
 # Lab 1: (20 minutes)
 ML Fundamentals
+
 Lecture: We cover key terms from classification to learning types.
+
 Lab: We label some data and run the glue benchmark on small purpose built model. How well can it classify plant, animal, or mineral?
+
 
 # Lab 2: (20 minutes)
 From ML to GenAI
+
 Lecture: AI Models, LLMs, and Prompting
+
 Lab: We connect a local LLM and ask it questions? How consistent are the results? Can you tell you're chatting with an AI?
+
 
 # Lab 3: (45 minutes)
 LLMs using Tools -> MCP primer
