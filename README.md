@@ -1,2 +1,4 @@
 # HackNWA-AI-For-Ethical-Hackers
-# and BSidesOK Labs
+# BSidesOK, and ISACA Omaha Spring Event Labs & Demos
+
+
