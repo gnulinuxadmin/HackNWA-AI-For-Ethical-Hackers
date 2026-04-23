@@ -1,5 +1,5 @@
-## HackNWA-AI-For-Ethical-Hackers
-## BSidesOK, and ISACA Omaha Spring Event Labs & Demos
+# HackNWA-AI-For-Ethical-Hackers
+# BSidesOK, and ISACA Omaha Spring Event Labs & Demos
 
 # Securing Agentic AI Systems - BSides OK
 Originally Taught by Evan Wagner and Christopher Williams
